@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Switch, Alert, StatusBar, Platform } from 'react-native';
+import { auth } from '../services/firebase';
+import { signOut } from 'firebase/auth';
 
 const SettingsItem = ({ icon, title, value, type = 'chevron', onPress }) => (
     <TouchableOpacity style={styles.item} onPress={onPress} activeOpacity={0.6}>
@@ -25,8 +27,19 @@ const SettingsItem = ({ icon, title, value, type = 'chevron', onPress }) => (
     </TouchableOpacity>
 );
 
-const AccountScreen = ({ onBack, isPro, onUpgrade, inventoryCount }) => {
+const AccountScreen = ({ onBack, isPro, onUpgrade, inventoryCount, userEmail }) => {
     const [notifications, setNotifications] = useState(true);
+
+    const handleLogout = () => {
+        Alert.alert(
+            "Logout",
+            "Sei sicuro di voler uscire?",
+            [
+                { text: "Annulla", style: "cancel" },
+                { text: "Esci", onPress: () => signOut(auth).catch(err => alert(err.message)) }
+            ]
+        );
+    };
 
     return (
         <View style={styles.mainWrapper}>
@@ -49,7 +62,7 @@ const AccountScreen = ({ onBack, isPro, onUpgrade, inventoryCount }) => {
                     <View style={styles.profileHero}>
                         <View style={styles.avatarWrapper}>
                             <View style={styles.avatarGradient}>
-                                <Text style={styles.avatarText}>U</Text>
+                                <Text style={styles.avatarText}>{userEmail ? userEmail[0].toUpperCase() : 'U'}</Text>
                             </View>
                             {isPro && (
                                 <View style={styles.proCrown}>
@@ -57,13 +70,12 @@ const AccountScreen = ({ onBack, isPro, onUpgrade, inventoryCount }) => {
                                 </View>
                             )}
                         </View>
-                        <Text style={styles.userName}>Venditore</Text>
+                        <Text style={styles.userName}>{userEmail || "Venditore"}</Text>
                         <View style={[styles.planBadge, isPro && styles.proPlanBadge]}>
                             <Text style={styles.planBadgeText}>{isPro ? 'ACCOUNT PRO' : 'PIANO FREE'}</Text>
                         </View>
                     </View>
 
-                    {/* Stats Bar con dati reali dall'inventario */}
                     <View style={styles.statsRow}>
                         <View style={styles.statItem}>
                             <Text style={styles.statNumber}>{inventoryCount}</Text>
@@ -81,14 +93,13 @@ const AccountScreen = ({ onBack, isPro, onUpgrade, inventoryCount }) => {
                         </View>
                     </View>
 
-                    {/* Sezione Insight Personali (Solo Testo) */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionHeader}>INSIGHT PERSONALI</Text>
+                        <Text style={styles.sectionHeader}>ETICA & PRIVACY</Text>
                         <View style={styles.insightBox}>
                             <Text style={styles.insightText}>
-                                • Hai creato {inventoryCount} annunci completi finora.{"\n"}
-                                • {inventoryCount > 0 ? "Usi regolarmente Vinted ed eBay per le tue vendite." : "Inizia a vendere per vedere qui le tue abitudini."} {"\n"}
-                                • {inventoryCount > 5 ? "Il tuo archivio ti sta facendo risparmiare ore di scrittura manuale." : "La tua precisione di caricamento è al 100%."}
+                                • SellSnap utilizza l’AI solo come supporto. Tutti i contenuti devono essere verificati dall’utente prima della pubblicazione.{"\n"}
+                                • Le immagini vengono elaborate temporaneamente e non vengono memorizzate in modo permanente sui nostri server.{"\n"}
+                                • La tua privacy è la nostra priorità: i dati non vengono mai venduti o condivisi per scopi pubblicitari.
                             </Text>
                         </View>
                     </View>
@@ -106,17 +117,6 @@ const AccountScreen = ({ onBack, isPro, onUpgrade, inventoryCount }) => {
                     )}
 
                     <View style={styles.section}>
-                        <Text style={styles.sectionHeader}>ETICA & PRIVACY</Text>
-                        <View style={styles.insightBox}>
-                            <Text style={styles.insightText}>
-                                • SellSnap utilizza l’AI solo come supporto. Tutti i contenuti devono essere verificati dall’utente prima della pubblicazione.{"\n"}
-                                • Le immagini vengono elaborate temporaneamente e non vengono memorizzate in modo permanente sui nostri server.{"\n"}
-                                • La tua privacy è la nostra priorità: i dati non vengono mai venduti o condivisi per scopi pubblicitari.
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.section}>
                         <Text style={styles.sectionHeader}>IMPOSTAZIONI</Text>
                         <View style={styles.groupCard}>
                             <SettingsItem
@@ -131,7 +131,7 @@ const AccountScreen = ({ onBack, isPro, onUpgrade, inventoryCount }) => {
                         </View>
                     </View>
 
-                    <TouchableOpacity style={styles.logoutButton} onPress={() => Alert.alert("Logout", "Sei sicuro?")}>
+                    <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                         <Text style={styles.logoutButtonText}>Chiudi Sessione</Text>
                     </TouchableOpacity>
 
@@ -218,9 +218,10 @@ const styles = StyleSheet.create({
     },
     userName: {
         color: '#fff',
-        fontSize: 24,
+        fontSize: 18,
         fontWeight: '800',
         letterSpacing: -0.5,
+        marginTop: 5,
     },
     planBadge: {
         marginTop: 10,

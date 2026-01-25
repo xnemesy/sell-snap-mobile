@@ -16,11 +16,14 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.rocco.sellsnap",
+      "versionCode": 2,
+      "edgeToEdgeEnabled": true,
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true
+        "foregroundImage": "./assets/adaptive-icon2.png",
+        "backgroundColor": "#121418"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"

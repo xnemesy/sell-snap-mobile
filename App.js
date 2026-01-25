@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, StatusBar, Alert, Animated, Dimensions } from 'react-native';
+import { StyleSheet, View, StatusBar, Alert, Animated, Dimensions, ActivityIndicator, LogBox } from 'react-native';
+
+// Ignora gli errori di connessione billing nel simulatore
+LogBox.ignoreLogs(['[RN-IAP]', 'Billing init error']);
+import { onAuthStateChanged } from 'firebase/auth';
+import { db, auth } from './app/services/firebase';
+import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
+
 import HomeScreen from './app/screens/HomeScreen';
 import AccountScreen from './app/screens/AccountScreen';
 import SnapScreen from './app/screens/SnapScreen';
@@ -11,13 +18,17 @@ import PriceExportScreen from './app/screens/PriceExportScreen';
 import SuccessExportScreen from './app/screens/SuccessExportScreen';
 import PricingScreen from './app/screens/PricingScreen';
 import InventoryDetailScreen from './app/screens/InventoryDetailScreen';
+import AuthScreen from './app/screens/AuthScreen';
 import PublishingOverlay from './app/components/PublishingOverlay';
+
 import { analyzeImagesWithGemini, generateListingsWithGemini } from './app/services/geminiService';
-import { initBilling, purchasePro } from './app/services/billing';
+import { initBilling } from './app/services/billing';
 
 const { width } = Dimensions.get('window');
 
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [status, setStatus] = useState('HOME');
   const [data, setData] = useState(null);
   const [drafts, setDrafts] = useState(null);
@@ -31,7 +42,38 @@ export default function App() {
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    let unsubscribeInventory = () => { };
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setAuthLoading(false);
+
+      if (u) {
+        // Lingua tra il database e lo stato locale
+        const q = query(
+          collection(db, "inventory"),
+          where("userId", "==", u.uid),
+          orderBy("createdAt", "desc")
+        );
+
+        unsubscribeInventory = onSnapshot(q, (snapshot) => {
+          const items = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          setInventory(items);
+        });
+      } else {
+        setInventory([]);
+        unsubscribeInventory();
+      }
+    });
+
     initBilling();
+    return () => {
+      unsubscribeAuth();
+      unsubscribeInventory();
+    };
   }, []);
 
   const changeStatus = (newStatus) => {
@@ -63,17 +105,22 @@ export default function App() {
     ]);
   };
 
-  const saveToInventory = (price) => {
-    if (!data) return;
-    const newItem = {
-      id: Date.now().toString(),
-      title: `${data.product.brand} ${data.product.model}`,
-      sku: data.product.sku || "N/A",
-      price: price || "0",
-      date: new Date().toLocaleDateString('it-IT'),
-      raw_data: data,
-    };
-    setInventory(prev => [newItem, ...prev]);
+  const saveToInventory = async (price) => {
+    if (!data || !user) return;
+    try {
+      await addDoc(collection(db, "inventory"), {
+        userId: user.uid,
+        title: `${data.product.brand} ${data.product.model}`,
+        sku: data.product.sku || "N/A",
+        price: price || "0",
+        date: new Date().toLocaleDateString('it-IT'),
+        raw_data: data,
+        createdAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.error("Firestore Error:", err);
+      Alert.alert("Errore", "Impossibile salvare nell'archivio cloud.");
+    }
   };
 
   const handleDuplicateRequest = (item) => {
@@ -148,6 +195,8 @@ export default function App() {
   };
 
   const renderScreen = () => {
+    if (!user) return <AuthScreen />;
+
     switch (status) {
       case 'HOME':
         return <HomeScreen
@@ -170,6 +219,7 @@ export default function App() {
           isPro={isPro}
           onUpgrade={() => changeStatus('PRICING')}
           inventoryCount={inventory.length}
+          userEmail={user.email}
         />;
       case 'SNAP':
         return <SnapScreen
@@ -198,6 +248,14 @@ export default function App() {
       default: return null;
     }
   };
+
+  if (authLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#121418', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#8b5cf6" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
