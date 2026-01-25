@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, StatusBar, Alert, Animated, Dimensions, ActivityIndicator, LogBox } from 'react-native';
 
-// Ignora gli errori di connessione billing nel simulatore
+// Fix billing simulator error
 LogBox.ignoreLogs(['[RN-IAP]', 'Billing init error']);
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from './app/services/firebase';
@@ -49,7 +49,6 @@ export default function App() {
       setAuthLoading(false);
 
       if (u) {
-        // Lingua tra il database e lo stato locale
         const q = query(
           collection(db, "inventory"),
           where("userId", "==", u.uid),

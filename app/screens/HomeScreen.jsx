@@ -6,7 +6,7 @@ const { width } = Dimensions.get('window');
 const InventoryItem = ({ item, onSelect }) => (
     <TouchableOpacity style={styles.inventoryCard} onPress={() => onSelect(item)} activeOpacity={0.7}>
         <View style={styles.inventoryIconBox}>
-            <Text style={{ fontSize: 20 }}>📦</Text>
+            <Text style={{ fontSize: 18, color: '#64748b' }}>#</Text>
         </View>
         <View style={styles.inventoryInfo}>
             <Text style={styles.inventoryTitle} numberOfLines={1}>{item.title}</Text>
@@ -67,7 +67,7 @@ const HomeScreen = ({ onStartNew, onOpenAccount, isPro, remainingAds, inventory,
                             <Text style={styles.createSubtitle}>Scatta, analizza e pubblica in pochi tap.</Text>
                         </View>
                         <View style={styles.createIconContainer}>
-                            <Text style={styles.cameraEmoji}>📸</Text>
+                            <Text style={styles.cameraIcon}>+</Text>
                         </View>
                     </TouchableOpacity>
 
@@ -91,7 +91,7 @@ const HomeScreen = ({ onStartNew, onOpenAccount, isPro, remainingAds, inventory,
                         {inventory.length === 0 ? (
                             <View style={styles.emptyCard}>
                                 <View style={styles.emptyIconCircle}>
-                                    <Text style={styles.emptyIcon}>📦</Text>
+                                    <Text style={styles.emptyIcon}>Ø</Text>
                                 </View>
                                 <Text style={styles.emptyTitle}>Il tuo archivio è vuoto.</Text>
                                 <Text style={styles.emptySubtitle}>Qui troverai gli oggetti che hai già preparato con SellSnap.</Text>
@@ -244,8 +244,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    cameraEmoji: {
+    cameraIcon: {
         fontSize: 32,
+        color: '#121418',
+        fontWeight: '300'
     },
     section: {
         marginBottom: 40,

@@ -37,7 +37,7 @@ const AuthScreen = () => {
                 <SafeAreaView style={styles.content}>
                     <View style={styles.header}>
                         <View style={styles.logoBox}>
-                            <Text style={styles.logoEmoji}>📸</Text>
+                            <Text style={styles.logoLabel}>S</Text>
                         </View>
                         <Text style={styles.title}>SellSnap</Text>
                         <Text style={styles.subtitle}>
@@ -139,8 +139,10 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#2d333d',
     },
-    logoEmoji: {
+    logoLabel: {
         fontSize: 32,
+        color: '#fff',
+        fontWeight: '900',
     },
     title: {
         color: '#fff',

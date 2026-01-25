@@ -61,8 +61,8 @@ const VisionProcessing = ({ onComplete }) => {
             </View>
 
             <View style={styles.footer}>
-                <Text style={styles.footerNote}>L'AI di SellSnap sta lavorando per te</Text>
-                <Text style={styles.ethicsMotto}>Trasparenza • Controllo • Onestà</Text>
+                <Text style={styles.footerNote}>Elaborazione in corso...</Text>
+                <Text style={styles.ethicsMotto}>Velocità • Semplicità • Ordine</Text>
             </View>
         </View>
     );

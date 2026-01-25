@@ -66,7 +66,7 @@ const AccountScreen = ({ onBack, isPro, onUpgrade, inventoryCount, userEmail }) 
                             </View>
                             {isPro && (
                                 <View style={styles.proCrown}>
-                                    <Text style={{ fontSize: 10 }}>✨</Text>
+                                    <Text style={{ fontSize: 10, color: '#fff' }}>★</Text>
                                 </View>
                             )}
                         </View>
@@ -111,7 +111,7 @@ const AccountScreen = ({ onBack, isPro, onUpgrade, inventoryCount, userEmail }) 
                                 <Text style={styles.promoSubtitle}>Sblocca annunci illimitati e l'archivio intelligente completo.</Text>
                             </View>
                             <View style={styles.promoIconContainer}>
-                                <Text style={styles.promoEmoji}>💎</Text>
+                                <Text style={styles.promoSymbol}>*</Text>
                             </View>
                         </TouchableOpacity>
                     )}
@@ -120,14 +120,14 @@ const AccountScreen = ({ onBack, isPro, onUpgrade, inventoryCount, userEmail }) 
                         <Text style={styles.sectionHeader}>IMPOSTAZIONI</Text>
                         <View style={styles.groupCard}>
                             <SettingsItem
-                                icon="🔔"
-                                title="Notifiche Intelligenti"
+                                icon="!"
+                                title="Notifiche"
                                 type="switch"
                                 value={notifications}
                                 onPress={() => setNotifications(!notifications)}
                             />
                             <View style={styles.innerDivider} />
-                            <SettingsItem icon="🛡️" title="Privacy & Sicurezza" />
+                            <SettingsItem icon="#" title="Privacy & Sicurezza" />
                         </View>
                     </View>
 
@@ -318,8 +318,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginLeft: 15,
     },
-    promoEmoji: {
+    promoSymbol: {
         fontSize: 20,
+        color: '#fff',
+        fontWeight: '900'
     },
     section: {
         marginBottom: 35,

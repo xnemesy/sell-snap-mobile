@@ -1,13 +1,10 @@
 import { Platform } from 'react-native';
 
-// Mock per react-native-iap per permettere il test nel simulatore (Expo Go) 
-// senza causare il crash per moduli nativi mancanti.
+// IAP Mock for Expo Go / Simulator
 let RNIap;
 try {
     RNIap = require('react-native-iap');
-} catch (e) {
-    console.log("react-native-iap non caricato (probabile ambiente Expo Go)");
-}
+} catch (e) { }
 
 const skus = Platform.select({
     android: ['pro_monthly', 'pro_yearly'],
@@ -15,19 +12,11 @@ const skus = Platform.select({
 });
 
 export const initBilling = async () => {
-    // Forza il mock in modalità sviluppo per evitare il blocco del simulatore/emulatore
-    if (__DEV__) {
-        console.log("[SellSnap] Dev Mode: Bypass real IAP init to avoid LogBox errors.");
-        return true;
-    }
+    if (__DEV__) return true;
 
-    if (!RNIap || !RNIap.initConnection) {
-        console.log("[Mock Billing] Inizializzazione simulata");
-        return true;
-    }
+    if (!RNIap || !RNIap.initConnection) return true;
     try {
         await RNIap.initConnection();
-        console.log("Billing connection initialized");
     } catch (err) {
         console.warn("Billing init ignored:", err.message);
     }
@@ -35,7 +24,6 @@ export const initBilling = async () => {
 
 export const getSubscriptions = async () => {
     if (!RNIap || !RNIap.getSubscriptions) {
-        console.log("[Mock Billing] Recupero prodotti simulato");
         return [
             { productId: 'pro_monthly', price: '€6,99', title: 'SellSnap Pro Monthly' },
             { productId: 'pro_yearly', price: '€59,00', title: 'SellSnap Pro Yearly' }
@@ -54,7 +42,6 @@ export const getSubscriptions = async () => {
 
 export const purchasePro = async (sku) => {
     if (!RNIap || !RNIap.requestSubscription) {
-        console.log("[Mock Billing] Acquisto simulato per:", sku);
         return { success: true, mock: true };
     }
     try {
