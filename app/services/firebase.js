@@ -2,14 +2,15 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// INSERIRE QUI LE TUE CHIAVI DA FIREBASE CONSOLE
+// Le chiavi vengono caricate dal file .env (EXPO_PUBLIC_...)
+// Questo evita che GitHub segnali leak di segreti nei repository pubblici.
 const firebaseConfig = {
-    apiKey: "AIzaSyAE3sbZ2yHiGZmMg2FJbSHZ2QGCf72McM",
-    authDomain: "sellsnap-4062d.firebaseapp.com",
-    projectId: "sellsnap-4062d",
-    storageBucket: "sellsnap-4062d.firebasestorage.app",
-    messagingSenderId: "315333514322",
-    appId: "1:315333514322:android:e9e6e4588a9c1e9b197b8b"
+    apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);
