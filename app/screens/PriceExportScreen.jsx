@@ -1,62 +1,113 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Switch } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Switch, StatusBar, Platform, KeyboardAvoidingView } from 'react-native';
 
 const MarketToggle = ({ name, active, onToggle }) => (
-    <View style={styles.toggleRow}>
+    <TouchableOpacity style={styles.toggleRow} onPress={onToggle} activeOpacity={0.7}>
         <Text style={styles.marketName}>{name}</Text>
         <Switch
             value={active}
             onValueChange={onToggle}
-            trackColor={{ false: '#1e293b', true: '#6366f1' }}
-            thumbColor={active ? '#fff' : '#94a3b8'}
+            trackColor={{ false: '#2d3139', true: '#8b5cf6' }}
+            thumbColor="#fff"
         />
-    </View>
+    </TouchableOpacity>
 );
 
-const PriceExportScreen = ({ onNext }) => {
-    const [price, setPrice] = useState('0');
+const PriceExportScreen = ({ onNext, onCancel }) => {
+    const [price, setPrice] = useState('');
     const [selected, setSelected] = useState({ vinted: true, ebay: true, subito: true });
 
     const toggle = (m) => setSelected(prev => ({ ...prev, [m]: !prev[m] }));
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.content}>
-                <Text style={styles.title}>Prezzo finale</Text>
-                <Text style={styles.subtitle}>Il prezzo è sempre deciso da te</Text>
-
-                <View style={styles.priceContainer}>
-                    <Text style={styles.currency}>€</Text>
-                    <TextInput
-                        style={styles.priceInput}
-                        keyboardType="numeric"
-                        value={price}
-                        onChangeText={setPrice}
-                        maxLength={6}
-                    />
+        <View style={styles.mainWrapper}>
+            <StatusBar barStyle="light-content" />
+            <SafeAreaView style={styles.safeArea}>
+                {/* Header con tasto Annulla */}
+                <View style={styles.headerRow}>
+                    <TouchableOpacity onPress={onCancel} style={styles.backBtn} hitSlop={20}>
+                        <Text style={styles.backIcon}>✕</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Export Finale</Text>
+                    <View style={{ width: 40 }} />
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>PREPARA PER</Text>
-                    <MarketToggle name="Vinted" active={selected.vinted} onToggle={() => toggle('vinted')} />
-                    <MarketToggle name="eBay" active={selected.ebay} onToggle={() => toggle('ebay')} />
-                    <MarketToggle name="Subito.it" active={selected.subito} onToggle={() => toggle('subito')} />
-                </View>
-            </View>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1 }}
+                >
+                    <View style={styles.content}>
+                        <Text style={styles.title}>Quanto chiedi?</Text>
+                        <Text style={styles.subtitle}>Il prezzo è sempre deciso da te. L'AI rispetta la tua scelta.</Text>
 
-            <View style={styles.footer}>
-                <TouchableOpacity style={styles.nextBtn} onPress={onNext}>
-                    <Text style={styles.nextBtnText}>Prepare drafts</Text>
-                </TouchableOpacity>
-            </View>
-        </SafeAreaView>
+                        <View style={styles.priceContainer}>
+                            <Text style={styles.currency}>€</Text>
+                            <TextInput
+                                style={styles.priceInput}
+                                keyboardType="numeric"
+                                value={price}
+                                onChangeText={setPrice}
+                                placeholder="0"
+                                placeholderTextColor="rgba(255,255,255,0.05)"
+                                maxLength={6}
+                                autoFocus={true}
+                            />
+                        </View>
+
+                        <View style={styles.section}>
+                            <Text style={styles.sectionHeader}>CANALI DI VENDITA</Text>
+                            <View style={styles.groupCard}>
+                                <MarketToggle name="Vinted" active={selected.vinted} onToggle={() => toggle('vinted')} />
+                                <View style={styles.innerDivider} />
+                                <MarketToggle name="eBay" active={selected.ebay} onToggle={() => toggle('ebay')} />
+                                <View style={styles.innerDivider} />
+                                <MarketToggle name="Subito.it" active={selected.subito} onToggle={() => toggle('subito')} />
+                            </View>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+
+                <View style={styles.footer}>
+                    <TouchableOpacity
+                        style={[styles.nextBtn, !price && styles.nextBtnDisabled]}
+                        onPress={onNext}
+                        disabled={!price}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.nextBtnText}>Prepara bozze finali</Text>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    mainWrapper: {
         flex: 1,
-        backgroundColor: '#0b0e14',
+        backgroundColor: '#121418',
+    },
+    safeArea: {
+        flex: 1,
+        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 0,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        height: 60,
+    },
+    backIcon: {
+        color: '#64748b',
+        fontSize: 22,
+        fontWeight: '300',
+    },
+    headerTitle: {
+        color: '#e2e8f0',
+        fontSize: 16,
+        fontWeight: '700',
+        letterSpacing: 0.5,
     },
     content: {
         padding: 24,
@@ -66,71 +117,94 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 28,
         fontWeight: '900',
-        marginTop: 20,
+        letterSpacing: -0.5,
     },
     subtitle: {
         color: '#94a3b8',
-        fontSize: 14,
-        marginTop: 4,
-        marginBottom: 60,
+        fontSize: 15,
+        marginTop: 8,
+        lineHeight: 22,
     },
     priceContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 60,
+        marginVertical: 60,
     },
     currency: {
-        color: '#6366f1',
-        fontSize: 48,
+        color: '#8b5cf6',
+        fontSize: 40,
         fontWeight: '900',
-        marginRight: 10,
+        marginRight: 15,
     },
     priceInput: {
         color: '#fff',
-        fontSize: 64,
+        fontSize: 100, // Prezzo gigante per enfasi
         fontWeight: '900',
-        minWidth: 100,
+        minWidth: 120,
         textAlign: 'center',
+        letterSpacing: -2,
     },
     section: {
-        gap: 16,
+        marginTop: 20,
     },
-    sectionTitle: {
-        color: '#6366f1',
-        fontSize: 10,
+    sectionHeader: {
+        color: '#475569',
+        fontSize: 11,
         fontWeight: '800',
-        letterSpacing: 2,
-        marginBottom: 8,
+        letterSpacing: 1.5,
+        marginBottom: 15,
+        marginLeft: 4,
+    },
+    groupCard: {
+        backgroundColor: '#1e2229',
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: '#2d333d',
+        paddingHorizontal: 4,
     },
     toggleRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: 'rgba(255, 255, 255, 0.03)',
-        padding: 16,
-        borderRadius: 12,
+        padding: 18,
     },
     marketName: {
-        color: '#fff',
+        color: '#f1f5f9',
         fontSize: 16,
         fontWeight: '600',
     },
+    innerDivider: {
+        height: 1,
+        backgroundColor: '#2d333d',
+        marginHorizontal: 16,
+    },
     footer: {
         padding: 24,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+        backgroundColor: '#121418',
         borderTopWidth: 1,
         borderTopColor: 'rgba(255, 255, 255, 0.05)',
     },
     nextBtn: {
-        backgroundColor: '#6366f1',
+        backgroundColor: '#8b5cf6',
         padding: 18,
         borderRadius: 100,
         alignItems: 'center',
+        shadowColor: '#8b5cf6',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 15,
+        elevation: 8,
+    },
+    nextBtnDisabled: {
+        opacity: 0.3,
+        backgroundColor: '#1e2229',
     },
     nextBtnText: {
         color: '#fff',
         fontSize: 16,
-        fontWeight: '700',
+        fontWeight: '800',
     },
 });
 

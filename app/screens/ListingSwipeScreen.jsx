@@ -1,34 +1,45 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Dimensions, StatusBar, Platform } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
-const ListingCard = ({ name, title, description, onEdit }) => {
+const ListingCard = ({ name, title, description, isEdited, onEdit }) => {
     return (
         <View style={styles.cardContainer}>
-            <View style={styles.cardHeader}>
+            <View style={styles.marketHeader}>
                 <Text style={styles.marketName}>{name}</Text>
+                {isEdited && (
+                    <View style={styles.editedBadge}>
+                        <Text style={styles.editedText}>PERSONALIZZATO</Text>
+                    </View>
+                )}
             </View>
 
-            <View style={styles.field}>
-                <Text style={styles.label}>TITOLO</Text>
-                <Text style={styles.titleValue} numberOfLines={1}>{title}</Text>
+            <View style={styles.fieldGroup}>
+                <View style={styles.field}>
+                    <Text style={styles.label}>TITOLO SUGGERITO</Text>
+                    <Text style={[styles.titleValue, isEdited && styles.editedValue]} numberOfLines={2}>{title}</Text>
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.field}>
+                    <Text style={styles.label}>DESCRIZIONE</Text>
+                    <Text style={[styles.descValue, isEdited && styles.editedValue]} numberOfLines={10}>{description}</Text>
+                </View>
             </View>
 
-            <View style={styles.field}>
-                <Text style={styles.label}>DESCRIZIONE</Text>
-                <Text style={styles.descValue} numberOfLines={8}>{description}</Text>
-            </View>
-
-            <TouchableOpacity style={styles.editBtn} onPress={onEdit}>
-                <Text style={styles.editBtnText}>Modifica</Text>
+            <TouchableOpacity style={styles.editBtn} onPress={onEdit} activeOpacity={0.7}>
+                <Text style={styles.editBtnIcon}>✏️</Text>
+                <Text style={styles.editBtnText}>Personalizza</Text>
             </TouchableOpacity>
         </View>
     );
 };
 
-const ListingSwipeScreen = ({ drafts, onNext }) => {
+const ListingSwipeScreen = ({ drafts, onNext, onCancel }) => {
     const [activeIndex, setActiveIndex] = useState(0);
+    const [editedStatus, setEditedStatus] = useState({ vinted: false, ebay: false, subito: false });
     const marketplaces = Object.keys(drafts);
 
     const handleScroll = (event) => {
@@ -39,134 +50,215 @@ const ListingSwipeScreen = ({ drafts, onNext }) => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Bozze generate</Text>
-                <View style={styles.dots}>
-                    {marketplaces.map((_, i) => (
-                        <View key={i} style={[styles.dot, activeIndex === i && styles.activeDot]} />
-                    ))}
+        <View style={styles.mainWrapper}>
+            <StatusBar barStyle="light-content" />
+            <SafeAreaView style={styles.safeArea}>
+                {/* Header con tasto Home/Annulla */}
+                <View style={styles.headerRow}>
+                    <TouchableOpacity onPress={onCancel} style={styles.backBtn} hitSlop={20}>
+                        <Text style={styles.backIcon}>✕</Text>
+                    </TouchableOpacity>
+                    <View style={styles.headerTitleGroup}>
+                        <Text style={styles.headerTitle}>Bozze AI</Text>
+                        <View style={styles.dots}>
+                            {marketplaces.map((_, i) => (
+                                <View key={i} style={[styles.dot, activeIndex === i && styles.activeDot]} />
+                            ))}
+                        </View>
+                    </View>
+                    <View style={{ width: 40 }} />
                 </View>
-            </View>
 
-            <ScrollView
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onScroll={handleScroll}
-                scrollEventThrottle={16}
-            >
-                {marketplaces.map((key) => (
-                    <ListingCard
-                        key={key}
-                        name={key.toUpperCase()}
-                        title={drafts[key].title}
-                        description={drafts[key].description}
-                        onEdit={() => alert('Bottom sheet editor in arrivo!')}
-                    />
-                ))}
-            </ScrollView>
+                <ScrollView
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onScroll={handleScroll}
+                    scrollEventThrottle={16}
+                    style={styles.swipeArea}
+                >
+                    {marketplaces.map((key) => (
+                        <ListingCard
+                            key={key}
+                            name={key.charAt(0).toUpperCase() + key.slice(1)}
+                            title={drafts[key].title}
+                            description={drafts[key].description}
+                            isEdited={editedStatus[key]}
+                            onEdit={() => alert('L\'editor manuale sarà disponibile a breve!')}
+                        />
+                    ))}
+                </ScrollView>
 
-            <View style={styles.footer}>
-                <TouchableOpacity style={styles.nextBtn} onPress={onNext}>
-                    <Text style={styles.nextBtnText}>Continua</Text>
-                </TouchableOpacity>
-            </View>
-        </SafeAreaView>
+                <View style={styles.footer}>
+                    <TouchableOpacity style={styles.nextBtn} onPress={onNext} activeOpacity={0.8}>
+                        <Text style={styles.nextBtnText}>Scegli Prezzo & Pubblica</Text>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    mainWrapper: {
         flex: 1,
-        backgroundColor: '#0b0e14',
+        backgroundColor: '#121418',
     },
-    header: {
-        padding: 24,
+    safeArea: {
+        flex: 1,
+        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 0,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        height: 60,
+    },
+    backIcon: {
+        color: '#64748b',
+        fontSize: 22,
+        fontWeight: '300',
+    },
+    headerTitleGroup: {
         alignItems: 'center',
     },
     headerTitle: {
         color: '#fff',
-        fontSize: 20,
+        fontSize: 14,
         fontWeight: '800',
-        marginBottom: 12,
+        letterSpacing: 1,
     },
     dots: {
         flexDirection: 'row',
-        gap: 8,
+        gap: 6,
+        marginTop: 8,
     },
     dot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        width: 5,
+        height: 5,
+        borderRadius: 2.5,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
     },
     activeDot: {
-        backgroundColor: '#6366f1',
-        width: 20,
+        backgroundColor: '#8b5cf6',
+        width: 15,
+    },
+    swipeArea: {
+        flex: 1,
     },
     cardContainer: {
         width: width,
         padding: 24,
     },
-    cardHeader: {
-        marginBottom: 30,
+    marketHeader: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        justifyContent: 'space-between',
+        marginBottom: 25,
     },
     marketName: {
-        color: '#6366f1',
-        fontSize: 32,
+        color: '#8b5cf6',
+        fontSize: 40,
         fontWeight: '900',
-        letterSpacing: -1,
+        letterSpacing: -1.5,
+    },
+    editedBadge: {
+        backgroundColor: 'rgba(139, 92, 246, 0.15)',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(139, 92, 246, 0.3)',
+    },
+    editedText: {
+        color: '#a78bfa',
+        fontSize: 9,
+        fontWeight: '900',
+        letterSpacing: 1,
+    },
+    fieldGroup: {
+        backgroundColor: '#1e2229',
+        borderRadius: 32,
+        padding: 24,
+        borderWidth: 1,
+        borderColor: '#2d333d',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 15,
     },
     field: {
-        marginBottom: 24,
+        marginVertical: 4,
     },
     label: {
-        color: '#94a3b8',
+        color: '#475569',
         fontSize: 10,
         fontWeight: '800',
-        letterSpacing: 1,
-        marginBottom: 8,
+        letterSpacing: 1.5,
+        marginBottom: 10,
     },
     titleValue: {
         color: '#fff',
-        fontSize: 18,
-        fontWeight: '600',
+        fontSize: 20,
+        fontWeight: '700',
+        lineHeight: 26,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#2d333d',
+        marginVertical: 20,
     },
     descValue: {
-        color: '#cbd5e1',
+        color: '#94a3b8',
         fontSize: 15,
-        lineHeight: 22,
+        lineHeight: 24,
+    },
+    editedValue: {
+        color: '#a78bfa',
     },
     editBtn: {
-        marginTop: 20,
-        alignSelf: 'flex-start',
-        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        marginTop: 25,
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
         paddingHorizontal: 24,
-        paddingVertical: 12,
+        paddingVertical: 14,
         borderRadius: 100,
         borderWidth: 1,
-        borderColor: 'rgba(99, 102, 241, 0.3)',
+        borderColor: 'rgba(255, 255, 255, 0.05)',
+    },
+    editBtnIcon: {
+        fontSize: 16,
+        marginRight: 10,
     },
     editBtnText: {
-        color: '#818cf8',
+        color: '#fff',
         fontWeight: '700',
+        fontSize: 14,
     },
     footer: {
         padding: 24,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
         borderTopWidth: 1,
         borderTopColor: 'rgba(255, 255, 255, 0.05)',
     },
     nextBtn: {
-        backgroundColor: '#6366f1',
+        backgroundColor: '#8b5cf6',
         padding: 18,
         borderRadius: 100,
         alignItems: 'center',
+        shadowColor: '#8b5cf6',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 15,
+        elevation: 8,
     },
     nextBtnText: {
         color: '#fff',
         fontSize: 16,
-        fontWeight: '700',
+        fontWeight: '800',
     },
 });
 

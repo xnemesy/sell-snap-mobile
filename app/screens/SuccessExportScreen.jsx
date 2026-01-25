@@ -1,121 +1,223 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Animated, StatusBar, Platform } from 'react-native';
 
 const ExportAction = ({ label, icon, color, onPress }) => (
     <TouchableOpacity
-        style={[styles.actionBtn, { borderColor: color + '40' }]}
+        style={[styles.actionBtn, { borderColor: color + '30' }]}
         onPress={onPress}
+        activeOpacity={0.7}
     >
-        <Text style={styles.actionIcon}>{icon}</Text>
+        <View style={[styles.actionIconBox, { backgroundColor: color + '15' }]}>
+            <Text style={styles.actionIcon}>{icon}</Text>
+        </View>
         <Text style={[styles.actionLabel, { color: color }]}>{label}</Text>
+        <Text style={styles.chevron}></Text>
     </TouchableOpacity>
 );
 
-const SuccessExportScreen = ({ onReset }) => {
+const SuccessExportScreen = ({ onReset, isPro }) => {
+    const scaleAnim = useRef(new Animated.Value(0)).current;
+    const opacityAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.parallel([
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                tension: 50,
+                friction: 7,
+                useNativeDriver: true,
+            }),
+            Animated.timing(opacityAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, []);
+
     return (
-        <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
-                <View style={styles.successIcon}>
-                    <Text style={{ fontSize: 60 }}>✅</Text>
+        <View style={styles.mainWrapper}>
+            <StatusBar barStyle="light-content" />
+            <SafeAreaView style={styles.safeArea}>
+                <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+                    <Animated.View style={[
+                        styles.successIcon,
+                        { transform: [{ scale: scaleAnim }], opacity: opacityAnim }
+                    ]}>
+                        <Text style={{ fontSize: 50 }}>✨</Text>
+                    </Animated.View>
+
+                    <Animated.View style={{ opacity: opacityAnim, alignItems: 'center', paddingHorizontal: 20 }}>
+                        <Text style={styles.title}>Ottimo lavoro!</Text>
+                        <Text style={styles.subtitle}>
+                            Le tue bozze sono pronte. Puoi copiarle e incollarle sui tuoi marketplace preferiti.
+                        </Text>
+                    </Animated.View>
+
+                    <View style={styles.actions}>
+                        <Text style={styles.sectionHeader}>VINTED</Text>
+                        <View style={styles.groupCard}>
+                            <ExportAction label="Copia testo" icon="📋" color="#10b981" onPress={() => alert('Copiato!')} />
+                            <View style={styles.innerDivider} />
+                            <ExportAction label="Apri app Vinted" icon="↗️" color="#10b981" onPress={() => alert('Apertura...')} />
+                        </View>
+
+                        <Text style={styles.sectionHeader}>EBAY</Text>
+                        <View style={styles.groupCard}>
+                            <ExportAction label="Copia testo" icon="📋" color="#8b5cf6" onPress={() => alert('Copiato!')} />
+                            <View style={styles.innerDivider} />
+                            <ExportAction label="Apri app eBay" icon="↗️" color="#8b5cf6" onPress={() => alert('Apertura...')} />
+                        </View>
+
+                        <Text style={styles.sectionHeader}>SUBITO.IT</Text>
+                        <View style={styles.groupCard}>
+                            <ExportAction label="Copia testo" icon="📋" color="#f43f5e" onPress={() => alert('Copiato!')} />
+                            <View style={styles.innerDivider} />
+                            <ExportAction label="Apri app Subito" icon="↗️" color="#f43f5e" onPress={() => alert('Apertura...')} />
+                        </View>
+                    </View>
+
+                    {!isPro && (
+                        <TouchableOpacity style={styles.proHintBox} activeOpacity={0.8}>
+                            <Text style={styles.proHintText}>
+                                💎 Passa a Pro per salvare la cronologia e non dover ricopiare i dati la prossima volta.
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                </ScrollView>
+
+                <View style={styles.footer}>
+                    <TouchableOpacity style={styles.resetBtn} onPress={onReset} activeOpacity={0.8}>
+                        <Text style={styles.resetBtnText}>Fine, torna alla Dashboard</Text>
+                    </TouchableOpacity>
                 </View>
-                <Text style={styles.title}>Bozze pronte!</Text>
-                <Text style={styles.subtitle}>Puoi ora pubblicare manualmente sulle piattaforme.</Text>
-
-                <View style={styles.actions}>
-                    <ExportAction label="Copia testo Vinted" icon="👗" color="#10b981" onPress={() => alert('Copiato!')} />
-                    <ExportAction label="Apri Vinted" icon="↗️" color="#10b981" onPress={() => alert('Apertura Vinted...')} />
-
-                    <View style={styles.divider} />
-
-                    <ExportAction label="Copia testo eBay" icon="📦" color="#6366f1" onPress={() => alert('Copiato!')} />
-                    <ExportAction label="Apri eBay" icon="↗️" color="#6366f1" onPress={() => alert('Apertura eBay...')} />
-
-                    <View style={styles.divider} />
-
-                    <ExportAction label="Copia testo Subito" icon="🇮🇹" color="#ef4444" onPress={() => alert('Copiato!')} />
-                    <ExportAction label="Apri Subito" icon="↗️" color="#ef4444" onPress={() => alert('Apertura Subito...')} />
-                </View>
-            </ScrollView>
-
-            <View style={styles.footer}>
-                <TouchableOpacity style={styles.resetBtn} onPress={onReset}>
-                    <Text style={styles.resetBtnText}>Finito, torna alla Home</Text>
-                </TouchableOpacity>
-            </View>
-        </SafeAreaView>
+            </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    mainWrapper: {
         flex: 1,
-        backgroundColor: '#0b0e14',
+        backgroundColor: '#121418',
+    },
+    safeArea: {
+        flex: 1,
+        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 0,
     },
     content: {
         padding: 24,
         alignItems: 'center',
+        paddingBottom: 120,
     },
     successIcon: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: 'rgba(139, 92, 246, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 24,
-        marginTop: 40,
+        marginTop: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(139, 92, 246, 0.2)',
     },
     title: {
         color: '#fff',
         fontSize: 28,
         fontWeight: '900',
-        marginBottom: 8,
+        letterSpacing: -0.5,
     },
     subtitle: {
         color: '#94a3b8',
-        fontSize: 16,
+        fontSize: 15,
         textAlign: 'center',
-        marginBottom: 40,
+        marginTop: 8,
+        lineHeight: 22,
     },
     actions: {
         width: '100%',
-        gap: 12,
+        marginTop: 40,
+    },
+    sectionHeader: {
+        color: '#475569',
+        fontSize: 11,
+        fontWeight: '800',
+        letterSpacing: 1.5,
+        marginBottom: 12,
+        marginTop: 20,
+        marginLeft: 4,
+    },
+    groupCard: {
+        backgroundColor: '#1e2229',
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: '#2d333d',
+        paddingHorizontal: 4,
     },
     actionBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.03)',
         padding: 16,
-        borderRadius: 12,
-        borderWidth: 1,
+    },
+    actionIconBox: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 16,
     },
     actionIcon: {
-        fontSize: 20,
-        marginRight: 12,
+        fontSize: 16,
     },
     actionLabel: {
-        fontSize: 16,
+        flex: 1,
+        fontSize: 15,
         fontWeight: '700',
     },
-    divider: {
+    chevron: {
+        color: '#334155',
+        fontSize: 18,
+    },
+    innerDivider: {
         height: 1,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        marginVertical: 10,
+        backgroundColor: '#2d333d',
+        marginHorizontal: 16,
+    },
+    proHintBox: {
+        marginTop: 40,
+        padding: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.05)',
+    },
+    proHintText: {
+        color: '#64748b',
+        fontSize: 13,
+        textAlign: 'center',
+        lineHeight: 20,
     },
     footer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
         padding: 24,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+        backgroundColor: '#121418',
     },
     resetBtn: {
+        backgroundColor: '#fff',
         padding: 18,
         borderRadius: 100,
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
     },
     resetBtnText: {
-        color: '#94a3b8',
+        color: '#121418',
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: '800',
     },
 });
 
