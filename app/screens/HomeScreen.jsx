@@ -1,22 +1,34 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, StatusBar, Platform, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, StatusBar, Platform, Dimensions, TextInput } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
-const InventoryItem = ({ item }) => (
-    <TouchableOpacity style={styles.inventoryCard} activeOpacity={0.7}>
+const InventoryItem = ({ item, onSelect }) => (
+    <TouchableOpacity style={styles.inventoryCard} onPress={() => onSelect(item)} activeOpacity={0.7}>
         <View style={styles.inventoryIconBox}>
-            <Text style={{ fontSize: 20 }}>👟</Text>
+            <Text style={{ fontSize: 20 }}>📦</Text>
         </View>
         <View style={styles.inventoryInfo}>
             <Text style={styles.inventoryTitle} numberOfLines={1}>{item.title}</Text>
-            <Text style={styles.inventorySub}>SKU: {item.sku} • {item.date}</Text>
+            <Text style={styles.inventorySub}>Modello: {item.sku} • {item.date}</Text>
         </View>
-        <Text style={styles.inventoryPrice}>€{item.price}</Text>
+        <View style={styles.actionCol}>
+            <Text style={styles.inventoryPrice}>€{item.price}</Text>
+            <View style={styles.baseBadge}>
+                <Text style={styles.baseText}>Usa come base</Text>
+            </View>
+        </View>
     </TouchableOpacity>
 );
 
-const HomeScreen = ({ onStartNew, onOpenAccount, isPro, remainingAds, inventory }) => {
+const HomeScreen = ({ onStartNew, onOpenAccount, isPro, remainingAds, inventory, onSelectItem }) => {
+    const [search, setSearch] = useState('');
+
+    const filteredInventory = inventory.filter(item =>
+        item.title?.toLowerCase().includes(search.toLowerCase()) ||
+        item.sku?.toLowerCase().includes(search.toLowerCase())
+    );
+
     return (
         <View style={styles.mainWrapper}>
             <StatusBar barStyle="light-content" />
@@ -51,8 +63,8 @@ const HomeScreen = ({ onStartNew, onOpenAccount, isPro, remainingAds, inventory 
 
                     <TouchableOpacity style={styles.createCard} onPress={onStartNew} activeOpacity={0.9}>
                         <View style={styles.createContent}>
-                            <Text style={styles.createTitle}>Vendi ora</Text>
-                            <Text style={styles.createSubtitle}>Scatta, analizza e pubblica{"\nin meno di 3 minuti."}</Text>
+                            <Text style={styles.createTitle}>Vendi nuovo oggetto</Text>
+                            <Text style={styles.createSubtitle}>Scatta, analizza e pubblica in pochi tap.</Text>
                         </View>
                         <View style={styles.createIconContainer}>
                             <Text style={styles.cameraEmoji}>📸</Text>
@@ -60,25 +72,33 @@ const HomeScreen = ({ onStartNew, onOpenAccount, isPro, remainingAds, inventory 
                     </TouchableOpacity>
 
                     <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Il tuo Archivio</Text>
-                            {inventory && inventory.length > 0 && (
-                                <TouchableOpacity>
-                                    <Text style={styles.seeAll}>Gestisci</Text>
-                                </TouchableOpacity>
-                            )}
+                        <View style={styles.sectionHeaderCol}>
+                            <Text style={styles.sectionTitle}>Archivio</Text>
+                            <Text style={styles.sectionSub}>Oggetti che hai già venduto o riutilizzato</Text>
+
+                            <View style={styles.searchBar}>
+                                <Text style={styles.searchIcon}>🔍</Text>
+                                <TextInput
+                                    placeholder="Cerca per codice modello, categoria o nome"
+                                    placeholderTextColor="#475569"
+                                    style={styles.searchInput}
+                                    value={search}
+                                    onChangeText={setSearch}
+                                />
+                            </View>
                         </View>
 
-                        {!inventory || inventory.length === 0 ? (
+                        {inventory.length === 0 ? (
                             <View style={styles.emptyCard}>
                                 <View style={styles.emptyIconCircle}>
                                     <Text style={styles.emptyIcon}>📦</Text>
                                 </View>
-                                <Text style={styles.emptyText}>Ancora nessun annuncio in archivio.</Text>
+                                <Text style={styles.emptyTitle}>Il tuo archivio è vuoto.</Text>
+                                <Text style={styles.emptySubtitle}>Qui troverai gli oggetti che hai già preparato con SellSnap.</Text>
                             </View>
                         ) : (
                             <View style={styles.inventoryList}>
-                                {inventory.map(item => <InventoryItem key={item.id} item={item} />)}
+                                {filteredInventory.map(item => <InventoryItem key={item.id} item={item} onSelect={onSelectItem} />)}
                             </View>
                         )}
                     </View>
@@ -86,10 +106,10 @@ const HomeScreen = ({ onStartNew, onOpenAccount, isPro, remainingAds, inventory 
                     <View style={styles.tipCard}>
                         <View style={styles.tipHeader}>
                             <Text style={styles.tipIcon}>💡</Text>
-                            <Text style={styles.tipLabel}>CONSIGLIO PRO</Text>
+                            <Text style={styles.tipLabel}>RISPARMIO TEMPO</Text>
                         </View>
                         <Text style={styles.tipContent}>
-                            Inquadra sempre l'etichetta della scatola per far sì che l'AI recuperi automaticamente i dati ufficiali.
+                            La duplicazione accelera il lavoro. Recupereremo brand e modello, tu aggiungerai solo le nuove foto.
                         </Text>
                     </View>
                 </ScrollView>
@@ -203,19 +223,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: 45,
-        elevation: 10,
     },
     createTitle: {
         color: '#121418',
-        fontSize: 24,
+        fontSize: 22,
         fontWeight: '900',
         letterSpacing: -0.5,
     },
     createSubtitle: {
         color: '#64748b',
-        fontSize: 14,
+        fontSize: 13,
         marginTop: 6,
-        lineHeight: 20,
+        lineHeight: 18,
     },
     createIconContainer: {
         width: 65,
@@ -231,10 +250,7 @@ const styles = StyleSheet.create({
     section: {
         marginBottom: 40,
     },
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+    sectionHeaderCol: {
         marginBottom: 20,
     },
     sectionTitle: {
@@ -242,19 +258,34 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '800',
     },
-    seeAll: {
-        color: '#8b5cf6',
+    sectionSub: {
+        color: '#475569',
+        fontSize: 13,
+        marginTop: 4,
+    },
+    searchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1e2229',
+        borderRadius: 14,
+        paddingHorizontal: 15,
+        marginTop: 15,
+        height: 48,
+        borderWidth: 1,
+        borderColor: '#2d333d',
+    },
+    searchIcon: {
+        fontSize: 16,
+        marginRight: 10,
+    },
+    searchInput: {
+        color: '#fff',
+        flex: 1,
         fontSize: 14,
-        fontWeight: '600',
     },
     emptyCard: {
-        backgroundColor: 'rgba(255,255,255,0.01)',
-        borderRadius: 28,
         paddingVertical: 45,
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#1e2229',
-        borderStyle: 'dashed',
     },
     emptyIconCircle: {
         width: 60,
@@ -268,10 +299,16 @@ const styles = StyleSheet.create({
     emptyIcon: {
         fontSize: 28,
     },
-    emptyText: {
+    emptyTitle: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    emptySubtitle: {
         color: '#475569',
-        fontSize: 14,
+        fontSize: 13,
         textAlign: 'center',
+        marginTop: 6,
     },
     inventoryList: {
         gap: 12,
@@ -307,9 +344,24 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginTop: 2,
     },
+    actionCol: {
+        alignItems: 'flex-end',
+        gap: 6,
+    },
     inventoryPrice: {
-        color: '#8b5cf6',
+        color: '#fff',
         fontSize: 16,
+        fontWeight: '800',
+    },
+    baseBadge: {
+        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 8,
+    },
+    baseText: {
+        color: '#a78bfa',
+        fontSize: 10,
         fontWeight: '800',
     },
     tipCard: {

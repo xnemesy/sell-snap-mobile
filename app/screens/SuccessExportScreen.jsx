@@ -1,5 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Animated, StatusBar, Platform } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Animated, StatusBar, Platform, Alert } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import * as Linking from 'expo-linking';
 
 const ExportAction = ({ label, icon, color, onPress }) => (
     <TouchableOpacity
@@ -15,9 +17,27 @@ const ExportAction = ({ label, icon, color, onPress }) => (
     </TouchableOpacity>
 );
 
-const SuccessExportScreen = ({ onReset, isPro }) => {
+const ChecklistItem = ({ text, checked, info }) => (
+    <View style={styles.checkRow}>
+        <View style={[
+            styles.checkBox,
+            checked && styles.checkBoxActive,
+            info && styles.checkBoxInfo
+        ]}>
+            {checked ? <Text style={styles.checkMark}>✓</Text> : info ? <Text style={styles.checkMark}>ℹ</Text> : null}
+        </View>
+        <Text style={[
+            styles.checkText,
+            (checked || info) && styles.checkTextActive
+        ]}>{text}</Text>
+    </View>
+);
+
+const SuccessExportScreen = ({ onReset, isPro, drafts }) => {
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
+
+    const [copiedMarkets, setCopiedMarkets] = useState({ vinted: false, ebay: false, subito: false });
 
     useEffect(() => {
         Animated.parallel([
@@ -35,55 +55,112 @@ const SuccessExportScreen = ({ onReset, isPro }) => {
         ]).start();
     }, []);
 
+    const copyToClipboard = async (market) => {
+        const marketKey = market.toLowerCase();
+        const draft = drafts ? drafts[marketKey] : null;
+
+        if (draft) {
+            const textToCopy = `${draft.title}\n\n${draft.description}`;
+            await Clipboard.setStringAsync(textToCopy);
+            setCopiedMarkets(prev => ({ ...prev, [marketKey]: true }));
+            Alert.alert("Copiato!", `Testo per ${market} pronto.`);
+        }
+    };
+
+    const openMarketplace = (market) => {
+        let url = "";
+        switch (market.toLowerCase()) {
+            case 'vinted': url = "https://www.vinted.it/items/new"; break;
+            case 'ebay': url = "https://www.ebay.it/sl/sell"; break;
+            case 'subito': url = "https://www.subito.it/inserisci/index.htm"; break;
+            default: url = "https://www.google.com";
+        }
+        Linking.openURL(url);
+    };
+
     return (
         <View style={styles.mainWrapper}>
             <StatusBar barStyle="light-content" />
             <SafeAreaView style={styles.safeArea}>
                 <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
                     <Animated.View style={[
                         styles.successIcon,
                         { transform: [{ scale: scaleAnim }], opacity: opacityAnim }
                     ]}>
-                        <Text style={{ fontSize: 50 }}>✨</Text>
+                        <Text style={{ fontSize: 40 }}>✅</Text>
                     </Animated.View>
 
-                    <Animated.View style={{ opacity: opacityAnim, alignItems: 'center', paddingHorizontal: 20 }}>
-                        <Text style={styles.title}>Ottimo lavoro!</Text>
+                    <Animated.View style={{ opacity: opacityAnim, alignItems: 'center' }}>
+                        <Text style={styles.title}>Bozza pronta</Text>
                         <Text style={styles.subtitle}>
-                            Le tue bozze sono pronte. Puoi copiarle e incollarle sui tuoi marketplace preferiti.
+                            Controllata da te. Pronta per la pubblicazione manuale.
                         </Text>
                     </Animated.View>
 
+                    <View style={styles.guideCard}>
+                        <Text style={styles.guideHeader}>VERIFICA FINALE</Text>
+                        <ChecklistItem text="Foto pronte" checked={true} />
+                        <ChecklistItem text="Titolo copiato" checked={Object.values(copiedMarkets).some(v => v)} />
+                        <ChecklistItem text="Descrizione copiata" checked={Object.values(copiedMarkets).some(v => v)} />
+                        <ChecklistItem text="Prezzo inserito manualmente" info={true} />
+                    </View>
+
                     <View style={styles.actions}>
-                        <Text style={styles.sectionHeader}>VINTED</Text>
-                        <View style={styles.groupCard}>
-                            <ExportAction label="Copia testo" icon="📋" color="#10b981" onPress={() => alert('Copiato!')} />
-                            <View style={styles.innerDivider} />
-                            <ExportAction label="Apri app Vinted" icon="↗️" color="#10b981" onPress={() => alert('Apertura...')} />
-                        </View>
+                        <Text style={styles.sectionHeader}>CANALI</Text>
 
-                        <Text style={styles.sectionHeader}>EBAY</Text>
-                        <View style={styles.groupCard}>
-                            <ExportAction label="Copia testo" icon="📋" color="#8b5cf6" onPress={() => alert('Copiato!')} />
-                            <View style={styles.innerDivider} />
-                            <ExportAction label="Apri app eBay" icon="↗️" color="#8b5cf6" onPress={() => alert('Apertura...')} />
-                        </View>
+                        <View style={styles.marketGroup}>
+                            <View style={styles.marketCard}>
+                                <View style={styles.marketInfo}>
+                                    <Text style={styles.marketTitle}>Vinted</Text>
+                                    <TouchableOpacity onPress={() => copyToClipboard('Vinted')}>
+                                        <Text style={[styles.copyLink, copiedMarkets.vinted && styles.copyDone]}>
+                                            {copiedMarkets.vinted ? "Copiato ✓" : "Copia testo"}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                                <TouchableOpacity style={[styles.openBtn, { backgroundColor: '#10b981' }]} onPress={() => openMarketplace('Vinted')}>
+                                    <Text style={styles.openBtnText}>Apri Vinted</Text>
+                                </TouchableOpacity>
+                            </View>
 
-                        <Text style={styles.sectionHeader}>SUBITO.IT</Text>
-                        <View style={styles.groupCard}>
-                            <ExportAction label="Copia testo" icon="📋" color="#f43f5e" onPress={() => alert('Copiato!')} />
-                            <View style={styles.innerDivider} />
-                            <ExportAction label="Apri app Subito" icon="↗️" color="#f43f5e" onPress={() => alert('Apertura...')} />
+                            <View style={styles.marketCard}>
+                                <View style={styles.marketInfo}>
+                                    <Text style={styles.marketTitle}>eBay</Text>
+                                    <TouchableOpacity onPress={() => copyToClipboard('ebay')}>
+                                        <Text style={[styles.copyLink, copiedMarkets.ebay && styles.copyDone]}>
+                                            {copiedMarkets.ebay ? "Copiato ✓" : "Copia testo"}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                                <TouchableOpacity style={[styles.openBtn, { backgroundColor: '#8b5cf6' }]} onPress={() => openMarketplace('ebay')}>
+                                    <Text style={styles.openBtnText}>Apri eBay</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.marketCard}>
+                                <View style={styles.marketInfo}>
+                                    <Text style={styles.marketTitle}>Subito</Text>
+                                    <TouchableOpacity onPress={() => copyToClipboard('subito')}>
+                                        <Text style={[styles.copyLink, copiedMarkets.subito && styles.copyDone]}>
+                                            {copiedMarkets.subito ? "Copiato ✓" : "Copia testo"}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                                <TouchableOpacity style={[styles.openBtn, { backgroundColor: '#f43f5e' }]} onPress={() => openMarketplace('subito')}>
+                                    <Text style={styles.openBtnText}>Apri Subito</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
 
-                    {!isPro && (
-                        <TouchableOpacity style={styles.proHintBox} activeOpacity={0.8}>
-                            <Text style={styles.proHintText}>
-                                💎 Passa a Pro per salvare la cronologia e non dover ricopiare i dati la prossima volta.
-                            </Text>
-                        </TouchableOpacity>
-                    )}
+                    <View style={styles.transparencyBox}>
+                        <Text style={styles.transparencyText}>
+                            SellSnap utilizza l’AI solo come supporto.{"\n"}
+                            Tutti i contenuti devono essere verificati dall’utente prima della pubblicazione.
+                        </Text>
+                    </View>
+
                 </ScrollView>
 
                 <View style={styles.footer}>
@@ -108,19 +185,17 @@ const styles = StyleSheet.create({
     content: {
         padding: 24,
         alignItems: 'center',
-        paddingBottom: 120,
+        paddingBottom: 150,
     },
     successIcon: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 24,
-        marginTop: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(139, 92, 246, 0.2)',
+        marginBottom: 20,
+        marginTop: 10,
     },
     title: {
         color: '#fff',
@@ -129,75 +204,124 @@ const styles = StyleSheet.create({
         letterSpacing: -0.5,
     },
     subtitle: {
-        color: '#94a3b8',
+        color: '#64748b',
         fontSize: 15,
         textAlign: 'center',
         marginTop: 8,
         lineHeight: 22,
     },
+    guideCard: {
+        backgroundColor: '#1e2229',
+        width: '100%',
+        borderRadius: 24,
+        padding: 20,
+        marginTop: 30,
+        borderWidth: 1,
+        borderColor: '#2d333d',
+    },
+    guideHeader: {
+        color: '#475569',
+        fontSize: 10,
+        fontWeight: '900',
+        letterSpacing: 1.5,
+        marginBottom: 15,
+    },
+    checkRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        gap: 12,
+    },
+    checkBox: {
+        width: 18,
+        height: 18,
+        borderRadius: 6,
+        borderWidth: 1.5,
+        borderColor: '#334155',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    checkBoxActive: {
+        backgroundColor: '#10b981',
+        borderColor: '#10b981',
+    },
+    checkBoxInfo: {
+        backgroundColor: '#3b82f6',
+        borderColor: '#3b82f6',
+    },
+    checkMark: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: '900',
+    },
+    checkText: {
+        color: '#475569',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    checkTextActive: {
+        color: '#f1f5f9',
+    },
     actions: {
         width: '100%',
-        marginTop: 40,
+        marginTop: 30,
     },
     sectionHeader: {
         color: '#475569',
         fontSize: 11,
         fontWeight: '800',
         letterSpacing: 1.5,
-        marginBottom: 12,
-        marginTop: 20,
+        marginBottom: 15,
         marginLeft: 4,
     },
-    groupCard: {
-        backgroundColor: '#1e2229',
-        borderRadius: 24,
-        borderWidth: 1,
-        borderColor: '#2d333d',
-        paddingHorizontal: 4,
+    marketGroup: {
+        gap: 12,
     },
-    actionBtn: {
+    marketCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 16,
-    },
-    actionIconBox: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
-    },
-    actionIcon: {
-        fontSize: 16,
-    },
-    actionLabel: {
-        flex: 1,
-        fontSize: 15,
-        fontWeight: '700',
-    },
-    chevron: {
-        color: '#334155',
-        fontSize: 18,
-    },
-    innerDivider: {
-        height: 1,
-        backgroundColor: '#2d333d',
-        marginHorizontal: 16,
-    },
-    proHintBox: {
-        marginTop: 40,
-        padding: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+        backgroundColor: '#1e2229',
+        padding: 12,
+        paddingLeft: 20,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.05)',
+        borderColor: '#2d333d',
     },
-    proHintText: {
-        color: '#64748b',
+    marketInfo: {
+        flex: 1,
+    },
+    marketTitle: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '800',
+    },
+    copyLink: {
+        color: '#8b5cf6',
         fontSize: 13,
+        fontWeight: '700',
+        marginTop: 2,
+    },
+    copyDone: {
+        color: '#10b981',
+    },
+    openBtn: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 12,
+    },
+    openBtnText: {
+        color: '#fff',
+        fontSize: 13,
+        fontWeight: '800',
+    },
+    transparencyBox: {
+        marginTop: 40,
+    },
+    transparencyText: {
+        color: '#475569',
+        fontSize: 13,
+        fontWeight: '600',
         textAlign: 'center',
-        lineHeight: 20,
     },
     footer: {
         position: 'absolute',
@@ -207,6 +331,8 @@ const styles = StyleSheet.create({
         padding: 24,
         paddingBottom: Platform.OS === 'ios' ? 40 : 24,
         backgroundColor: '#121418',
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255, 255, 255, 0.05)',
     },
     resetBtn: {
         backgroundColor: '#fff',

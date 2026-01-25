@@ -22,13 +22,12 @@ const VisionConfirmScreen = ({ data, onUpdate, onConfirm, onCancel }) => {
                 }),
             ]).start();
         }
-    }, []);
+    }, [hasUncertainties]);
 
     return (
         <View style={styles.mainWrapper}>
             <StatusBar barStyle="light-content" />
             <SafeAreaView style={styles.safeArea}>
-                {/* Header con tasto Annulla */}
                 <View style={styles.headerRow}>
                     <TouchableOpacity onPress={onCancel} style={styles.backBtn} hitSlop={20}>
                         <Text style={styles.backIcon}>✕</Text>
@@ -58,7 +57,7 @@ const VisionConfirmScreen = ({ data, onUpdate, onConfirm, onCancel }) => {
                         <Text style={styles.sectionTitle}>DETTAGLI RIPORTATI</Text>
                         <View style={styles.cardGroup}>
                             <FactCard label="Condizione" value={data.condition.level} />
-                            {data.missing_or_uncertain.map((item, idx) => (
+                            {data.missing_or_uncertain && data.missing_or_uncertain.map((item, idx) => (
                                 <View key={idx}>
                                     <View style={styles.cardDivider} />
                                     <FactCard label="Da Confermare" value={item} isUncertain={true} />
@@ -67,8 +66,18 @@ const VisionConfirmScreen = ({ data, onUpdate, onConfirm, onCancel }) => {
                         </View>
                     </View>
 
+                    <View style={styles.tipCard}>
+                        <View style={styles.tipHeader}>
+                            <Text style={styles.tipIcon}>💡</Text>
+                            <Text style={styles.tipLabel}>CONSIGLIO AI</Text>
+                        </View>
+                        <Text style={styles.tipContent}>
+                            "Confermare sempre i dati migliora la qualità dell’annuncio."
+                        </Text>
+                    </View>
+
                     <View style={styles.trustBanner}>
-                        <Text style={styles.trustText}>🛡️ Questi dati verranno usati per scrivere annunci onesti e chiari. Tu rimani sempre in controllo.</Text>
+                        <Text style={styles.trustText}>🛡️ SellSnap utilizza l’AI solo come supporto. Tutti i contenuti devono essere verificati prima della pubblicazione.</Text>
                     </View>
                 </ScrollView>
 
@@ -113,7 +122,7 @@ const styles = StyleSheet.create({
     },
     scroll: {
         padding: 24,
-        paddingBottom: 120,
+        paddingBottom: 150,
     },
     intro: {
         marginBottom: 35,
@@ -153,6 +162,34 @@ const styles = StyleSheet.create({
         backgroundColor: '#2d333d',
         marginHorizontal: 16,
     },
+    tipCard: {
+        backgroundColor: 'rgba(139, 92, 246, 0.05)',
+        borderRadius: 24,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(139, 92, 246, 0.1)',
+        marginBottom: 30,
+    },
+    tipHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+        gap: 8,
+    },
+    tipIcon: {
+        fontSize: 14,
+    },
+    tipLabel: {
+        color: '#8b5cf6',
+        fontSize: 11,
+        fontWeight: '900',
+        letterSpacing: 1,
+    },
+    tipContent: {
+        color: '#94a3b8',
+        fontSize: 14,
+        lineHeight: 20,
+    },
     trustBanner: {
         marginTop: 10,
         padding: 16,
@@ -162,10 +199,11 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255, 255, 255, 0.05)',
     },
     trustText: {
-        color: '#64748b',
+        color: '#475569',
         fontSize: 12,
         lineHeight: 18,
         textAlign: 'center',
+        fontStyle: 'italic',
     },
     footer: {
         position: 'absolute',
@@ -184,11 +222,6 @@ const styles = StyleSheet.create({
         padding: 18,
         borderRadius: 100,
         alignItems: 'center',
-        shadowColor: '#8b5cf6',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 15,
-        elevation: 8,
     },
     confirmBtnText: {
         color: '#fff',

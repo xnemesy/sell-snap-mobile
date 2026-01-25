@@ -25,14 +25,13 @@ const SettingsItem = ({ icon, title, value, type = 'chevron', onPress }) => (
     </TouchableOpacity>
 );
 
-const AccountScreen = ({ onBack, isPro, onUpgrade }) => {
+const AccountScreen = ({ onBack, isPro, onUpgrade, inventoryCount }) => {
     const [notifications, setNotifications] = useState(true);
 
     return (
         <View style={styles.mainWrapper}>
             <StatusBar barStyle="light-content" />
             <SafeAreaView style={styles.safeArea}>
-                {/* Unico header più arioso ed elegante */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={onBack} style={styles.closeBtn} hitSlop={20}>
                         <Text style={styles.closeIcon}>✕</Text>
@@ -47,7 +46,6 @@ const AccountScreen = ({ onBack, isPro, onUpgrade }) => {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* Profile Section con colori più caldi e organici */}
                     <View style={styles.profileHero}>
                         <View style={styles.avatarWrapper}>
                             <View style={styles.avatarGradient}>
@@ -59,36 +57,47 @@ const AccountScreen = ({ onBack, isPro, onUpgrade }) => {
                                 </View>
                             )}
                         </View>
-                        <Text style={styles.userName}>Benvenuto, Venditore</Text>
+                        <Text style={styles.userName}>Venditore</Text>
                         <View style={[styles.planBadge, isPro && styles.proPlanBadge]}>
                             <Text style={styles.planBadgeText}>{isPro ? 'ACCOUNT PRO' : 'PIANO FREE'}</Text>
                         </View>
                     </View>
 
-                    {/* Stats Bar - Più discreta e Apple-style */}
+                    {/* Stats Bar con dati reali dall'inventario */}
                     <View style={styles.statsRow}>
                         <View style={styles.statItem}>
-                            <Text style={styles.statNumber}>12</Text>
+                            <Text style={styles.statNumber}>{inventoryCount}</Text>
                             <Text style={styles.statLabel}>Annunci</Text>
                         </View>
                         <View style={styles.statDivider} />
                         <View style={styles.statItem}>
                             <Text style={styles.statNumber}>3</Text>
-                            <Text style={styles.statLabel}>Marketplace</Text>
+                            <Text style={styles.statLabel}>Canali</Text>
                         </View>
                         <View style={styles.statDivider} />
                         <View style={styles.statItem}>
-                            <Text style={styles.statNumber}>45m</Text>
+                            <Text style={styles.statNumber}>{inventoryCount * 12}m</Text>
                             <Text style={styles.statLabel}>Risparmiati</Text>
                         </View>
                     </View>
 
-                    {/* Upgrade Card - Più "Premium" e meno "AI generated" */}
+                    {/* Sezione Insight Personali (Solo Testo) */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionHeader}>INSIGHT PERSONALI</Text>
+                        <View style={styles.insightBox}>
+                            <Text style={styles.insightText}>
+                                • Hai creato {inventoryCount} annunci completi finora.{"\n"}
+                                • {inventoryCount > 0 ? "Usi regolarmente Vinted ed eBay per le tue vendite." : "Inizia a vendere per vedere qui le tue abitudini."} {"\n"}
+                                • {inventoryCount > 5 ? "Il tuo archivio ti sta facendo risparmiare ore di scrittura manuale." : "La tua precisione di caricamento è al 100%."}
+                            </Text>
+                        </View>
+                    </View>
+
                     {!isPro && (
                         <TouchableOpacity style={styles.promoCard} onPress={onUpgrade} activeOpacity={0.9}>
                             <View style={styles.promoContent}>
                                 <Text style={styles.promoTitle}>Passa a Pro</Text>
-                                <Text style={styles.promoSubtitle}>Sblocca annunci illimitati e cronologia automatica.</Text>
+                                <Text style={styles.promoSubtitle}>Sblocca annunci illimitati e l'archivio intelligente completo.</Text>
                             </View>
                             <View style={styles.promoIconContainer}>
                                 <Text style={styles.promoEmoji}>💎</Text>
@@ -96,18 +105,19 @@ const AccountScreen = ({ onBack, isPro, onUpgrade }) => {
                         </TouchableOpacity>
                     )}
 
-                    {/* Settings Groups */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionHeader}>INTELLIGENZA ARTIFICIALE</Text>
-                        <View style={styles.groupCard}>
-                            <SettingsItem icon="🧠" title="Learning Soft Mode" type="switch" value={isPro} />
-                            <View style={styles.innerDivider} />
-                            <SettingsItem icon="📐" title="Precisione Analisi" value="Massima" type="text" />
+                        <Text style={styles.sectionHeader}>ETICA & PRIVACY</Text>
+                        <View style={styles.insightBox}>
+                            <Text style={styles.insightText}>
+                                • SellSnap utilizza l’AI solo come supporto. Tutti i contenuti devono essere verificati dall’utente prima della pubblicazione.{"\n"}
+                                • Le immagini vengono elaborate temporaneamente e non vengono memorizzate in modo permanente sui nostri server.{"\n"}
+                                • La tua privacy è la nostra priorità: i dati non vengono mai venduti o condivisi per scopi pubblicitari.
+                            </Text>
                         </View>
                     </View>
 
                     <View style={styles.section}>
-                        <Text style={styles.sectionHeader}>PREFERENZE APP</Text>
+                        <Text style={styles.sectionHeader}>IMPOSTAZIONI</Text>
                         <View style={styles.groupCard}>
                             <SettingsItem
                                 icon="🔔"
@@ -117,13 +127,10 @@ const AccountScreen = ({ onBack, isPro, onUpgrade }) => {
                                 onPress={() => setNotifications(!notifications)}
                             />
                             <View style={styles.innerDivider} />
-                            <SettingsItem icon="📦" title="Canale Predefinito" value="Vinted" type="text" />
-                            <View style={styles.innerDivider} />
                             <SettingsItem icon="🛡️" title="Privacy & Sicurezza" />
                         </View>
                     </View>
 
-                    {/* Logout con stile meno aggressivo */}
                     <TouchableOpacity style={styles.logoutButton} onPress={() => Alert.alert("Logout", "Sei sicuro?")}>
                         <Text style={styles.logoutButtonText}>Chiudi Sessione</Text>
                     </TouchableOpacity>
@@ -138,7 +145,7 @@ const AccountScreen = ({ onBack, isPro, onUpgrade }) => {
 const styles = StyleSheet.create({
     mainWrapper: {
         flex: 1,
-        backgroundColor: '#121418', // Antracite più caldo
+        backgroundColor: '#121418',
     },
     safeArea: {
         flex: 1,
@@ -151,6 +158,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 25,
         paddingVertical: 15,
     },
+    closeBtn: {
+        width: 40,
+    },
     closeIcon: {
         color: '#64748b',
         fontSize: 20,
@@ -158,14 +168,17 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         color: '#e2e8f0',
-        fontSize: 16,
-        fontWeight: '700',
-        letterSpacing: 0.5,
+        fontSize: 14,
+        fontWeight: '800',
+        letterSpacing: 1,
+        textTransform: 'uppercase',
     },
     editLabel: {
         color: '#8b5cf6',
         fontSize: 14,
         fontWeight: '600',
+        width: 60,
+        textAlign: 'right',
     },
     scrollContent: {
         paddingBottom: 40,
@@ -187,10 +200,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 1,
         borderColor: '#2d333d',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.2,
-        shadowRadius: 15,
     },
     avatarText: {
         color: '#fff',
@@ -214,19 +223,20 @@ const styles = StyleSheet.create({
         letterSpacing: -0.5,
     },
     planBadge: {
-        marginTop: 8,
-        backgroundColor: '#2d333d',
+        marginTop: 10,
+        backgroundColor: '#1e2229',
         paddingHorizontal: 12,
         paddingVertical: 4,
         borderRadius: 100,
+        borderWidth: 1,
+        borderColor: '#2d333d',
     },
     proPlanBadge: {
-        backgroundColor: 'rgba(139, 92, 246, 0.2)',
-        borderColor: 'rgba(139, 92, 246, 0.3)',
-        borderWidth: 1,
+        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+        borderColor: '#8b5cf6',
     },
     planBadgeText: {
-        color: '#94a3b8',
+        color: '#64748b',
         fontSize: 10,
         fontWeight: '900',
         letterSpacing: 1,
@@ -234,11 +244,11 @@ const styles = StyleSheet.create({
     statsRow: {
         flexDirection: 'row',
         marginHorizontal: 25,
-        backgroundColor: 'rgba(255,255,255,0.02)',
+        backgroundColor: '#1e2229',
         borderRadius: 24,
         paddingVertical: 20,
         borderWidth: 1,
-        borderColor: '#1e2229',
+        borderColor: '#2d333d',
         marginBottom: 30,
     },
     statItem: {
@@ -247,20 +257,33 @@ const styles = StyleSheet.create({
     },
     statNumber: {
         color: '#fff',
-        fontSize: 18,
-        fontWeight: '800',
+        fontSize: 20,
+        fontWeight: '900',
     },
     statLabel: {
         color: '#64748b',
         fontSize: 11,
         marginTop: 2,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     statDivider: {
         width: 1,
-        height: '60%',
-        backgroundColor: '#1e2229',
+        height: '50%',
+        backgroundColor: '#2d333d',
         alignSelf: 'center',
+    },
+    insightBox: {
+        padding: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.01)',
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.05)',
+    },
+    insightText: {
+        color: '#94a3b8',
+        fontSize: 14,
+        lineHeight: 24,
+        fontWeight: '500',
     },
     promoCard: {
         marginHorizontal: 25,
@@ -269,12 +292,7 @@ const styles = StyleSheet.create({
         padding: 24,
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 40,
-        shadowColor: '#8b5cf6',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-        elevation: 8,
+        marginVertical: 40,
     },
     promoContent: {
         flex: 1,
@@ -285,22 +303,22 @@ const styles = StyleSheet.create({
         fontWeight: '900',
     },
     promoSubtitle: {
-        color: 'rgba(255,255,255,0.85)',
+        color: 'rgba(255,255,255,0.8)',
         fontSize: 13,
         marginTop: 4,
         lineHeight: 18,
     },
     promoIconContainer: {
-        width: 50,
-        height: 50,
+        width: 44,
+        height: 44,
         backgroundColor: 'rgba(255,255,255,0.2)',
-        borderRadius: 15,
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
         marginLeft: 15,
     },
     promoEmoji: {
-        fontSize: 24,
+        fontSize: 20,
     },
     section: {
         marginBottom: 35,
@@ -308,8 +326,8 @@ const styles = StyleSheet.create({
     },
     sectionHeader: {
         color: '#475569',
-        fontSize: 11,
-        fontWeight: '800',
+        fontSize: 10,
+        fontWeight: '900',
         letterSpacing: 1.5,
         marginBottom: 15,
         marginLeft: 5,
@@ -339,8 +357,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#2d333d',
     },
     itemIcon: {
         fontSize: 18,
@@ -371,7 +387,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: 'rgba(239, 68, 68, 0.2)',
+        borderColor: 'rgba(255, 255, 255, 0.05)',
     },
     logoutButtonText: {
         color: '#ef4444',

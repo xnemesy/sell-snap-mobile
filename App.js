@@ -10,6 +10,7 @@ import ListingSwipeScreen from './app/screens/ListingSwipeScreen';
 import PriceExportScreen from './app/screens/PriceExportScreen';
 import SuccessExportScreen from './app/screens/SuccessExportScreen';
 import PricingScreen from './app/screens/PricingScreen';
+import InventoryDetailScreen from './app/screens/InventoryDetailScreen';
 import PublishingOverlay from './app/components/PublishingOverlay';
 import { analyzeImagesWithGemini, generateListingsWithGemini } from './app/services/geminiService';
 import { initBilling, purchasePro } from './app/services/billing';
@@ -23,6 +24,8 @@ export default function App() {
   const [isPro, setIsPro] = useState(false);
   const [dailyAdsCount, setDailyAdsCount] = useState(0);
   const [inventory, setInventory] = useState([]);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [duplicateBase, setDuplicateBase] = useState(null);
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -48,7 +51,15 @@ export default function App() {
   const resetFlow = () => {
     Alert.alert("Annulla", "Tornare alla Home? I progressi andranno persi.", [
       { text: "No", style: "cancel" },
-      { text: "Sì", onPress: () => { setData(null); setDrafts(null); changeStatus('HOME'); } }
+      {
+        text: "Sì", onPress: () => {
+          setData(null);
+          setDrafts(null);
+          setDuplicateBase(null);
+          setSelectedItem(null);
+          changeStatus('HOME');
+        }
+      }
     ]);
   };
 
@@ -60,9 +71,26 @@ export default function App() {
       sku: data.product.sku || "N/A",
       price: price || "0",
       date: new Date().toLocaleDateString('it-IT'),
-      image: null,
+      raw_data: data,
     };
     setInventory(prev => [newItem, ...prev]);
+  };
+
+  const handleDuplicateRequest = (item) => {
+    Alert.alert(
+      "Creare un annuncio simile?",
+      "Categoria e struttura verranno riutilizzate. Foto, condizioni e difetti saranno rivalutati.",
+      [
+        { text: "Annulla", style: "cancel" },
+        {
+          text: "Continua",
+          onPress: () => {
+            setDuplicateBase(item.raw_data);
+            changeStatus('SNAP');
+          }
+        }
+      ]
+    );
   };
 
   const handleNext = async (val) => {
@@ -70,8 +98,17 @@ export default function App() {
       if (!isPro && dailyAdsCount >= 3) { changeStatus('PRICING'); return; }
       changeStatus('PROCESSING');
       try {
-        const visionResult = val ? await analyzeImagesWithGemini(val) : mockVisionData;
+        let visionResult;
+        if (val) {
+          visionResult = await analyzeImagesWithGemini(val);
+          if (duplicateBase) {
+            visionResult.product = { ...duplicateBase.product, ...visionResult.product };
+          }
+        } else {
+          visionResult = duplicateBase ? { ...duplicateBase, condition: { level: "Da confermare" } } : mockVisionData;
+        }
         setData(visionResult);
+        setDuplicateBase(null);
         setTimeout(() => changeStatus('VISION'), 800);
       } catch (err) {
         Alert.alert("Errore", "Riprova più tardi.");
@@ -100,6 +137,7 @@ export default function App() {
       changeStatus('HOME');
       setData(null);
       setDrafts(null);
+      setSelectedItem(null);
     }
   };
 
@@ -112,18 +150,43 @@ export default function App() {
   const renderScreen = () => {
     switch (status) {
       case 'HOME':
-        return <HomeScreen onStartNew={() => changeStatus('SNAP')} onOpenAccount={() => changeStatus('ACCOUNT')} isPro={isPro} remainingAds={isPro ? null : 3 - dailyAdsCount} inventory={inventory} />;
+        return <HomeScreen
+          onStartNew={() => { setDuplicateBase(null); changeStatus('SNAP'); }}
+          onOpenAccount={() => changeStatus('ACCOUNT')}
+          isPro={isPro}
+          remainingAds={isPro ? null : 3 - dailyAdsCount}
+          inventory={inventory}
+          onSelectItem={(item) => { setSelectedItem(item); changeStatus('INVENTORY_DETAIL'); }}
+        />;
+      case 'INVENTORY_DETAIL':
+        return <InventoryDetailScreen
+          item={selectedItem}
+          onBack={() => changeStatus('HOME')}
+          onDuplicate={handleDuplicateRequest}
+        />;
       case 'ACCOUNT':
-        return <AccountScreen onBack={() => changeStatus('HOME')} isPro={isPro} onUpgrade={() => changeStatus('PRICING')} />;
+        return <AccountScreen
+          onBack={() => changeStatus('HOME')}
+          isPro={isPro}
+          onUpgrade={() => changeStatus('PRICING')}
+          inventoryCount={inventory.length}
+        />;
       case 'SNAP':
-        return <SnapScreen onNext={handleNext} isPro={isPro} remainingAds={isPro ? null : 3 - dailyAdsCount} onShowPricing={() => changeStatus('PRICING')} onCancel={() => changeStatus('HOME')} />;
+        return <SnapScreen
+          onNext={handleNext}
+          isPro={isPro}
+          remainingAds={isPro ? null : 3 - dailyAdsCount}
+          onShowPricing={() => changeStatus('PRICING')}
+          onCancel={() => changeStatus('HOME')}
+          isDuplicating={!!duplicateBase}
+        />;
       case 'PRICING':
         return <PricingScreen onPlanSelect={(p) => { if (p !== 'free') setIsPro(true); changeStatus('HOME'); }} onBack={() => changeStatus('HOME')} limitReached={!isPro && dailyAdsCount >= 3} />;
       case 'PROCESSING':
       case 'GENERATING_LISTINGS':
         return <VisionProcessing onComplete={() => { }} />;
       case 'VISION':
-        return <VisionConfirmScreen data={data} onConfirm={() => handleNext()} onCancel={resetFlow} />;
+        return <VisionConfirmScreen data={data} onUpdate={setData} onConfirm={() => handleNext()} onCancel={resetFlow} />;
       case 'READINESS':
         return <ImageReadinessScreen onNext={() => handleNext()} onCancel={resetFlow} />;
       case 'LISTING':
@@ -131,7 +194,7 @@ export default function App() {
       case 'PRICE':
         return <PriceExportScreen onNext={handleNext} onCancel={resetFlow} />;
       case 'SUCCESS':
-        return <SuccessExportScreen onReset={() => handleNext()} isPro={isPro} />;
+        return <SuccessExportScreen onReset={() => handleNext()} isPro={isPro} drafts={drafts} />;
       default: return null;
     }
   };

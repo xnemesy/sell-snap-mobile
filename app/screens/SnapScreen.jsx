@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 const { width } = Dimensions.get('window');
 
-const SnapScreen = ({ onNext, isPro, remainingAds, onShowPricing, onCancel }) => {
+const SnapScreen = ({ onNext, isPro, remainingAds, onShowPricing, onCancel, isDuplicating }) => {
     const pickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images'],
@@ -43,11 +43,21 @@ const SnapScreen = ({ onNext, isPro, remainingAds, onShowPricing, onCancel }) =>
                 </View>
 
                 <View style={styles.cameraPlaceholder}>
+                    {isDuplicating && (
+                        <View style={styles.duplicationNotice}>
+                            <Text style={styles.duplicationText}>Nuove foto per un nuovo annuncio</Text>
+                        </View>
+                    )}
+
                     <View style={styles.focusFrame}>
                         <Text style={styles.placeholderEmoji}>📸</Text>
                     </View>
                     <Text style={styles.instructionText}>Inquadra l'oggetto in luce naturale</Text>
                     <Text style={styles.subInstruction}>L'AI analizzerà i dettagli visibili</Text>
+
+                    <View style={styles.tipBox}>
+                        <Text style={styles.tipText}>"Sfondo semplice = più chiarezza."</Text>
+                    </View>
                 </View>
 
                 <View style={styles.controls}>
@@ -123,6 +133,21 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    duplicationNotice: {
+        position: 'absolute',
+        top: 40,
+        backgroundColor: 'rgba(139, 92, 246, 0.2)',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 100,
+        borderWidth: 1,
+        borderColor: 'rgba(139, 92, 246, 0.3)',
+    },
+    duplicationText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '800',
+    },
     focusFrame: {
         width: 220,
         height: 220,
@@ -149,6 +174,18 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginTop: 8,
         textAlign: 'center',
+    },
+    tipBox: {
+        marginTop: 40,
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        paddingHorizontal: 15,
+        paddingVertical: 8,
+        borderRadius: 12,
+    },
+    tipText: {
+        color: '#475569',
+        fontSize: 12,
+        fontStyle: 'italic',
     },
     controls: {
         height: 180,
