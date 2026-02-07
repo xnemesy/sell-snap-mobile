@@ -80,7 +80,7 @@ export const analyzeImagesWithGemini = async (base64Images) => {
   // 4. Esecuzione con retry automatico
   try {
     const result = await withRetry(
-      () => fetchWithErrorHandling(`${API_BASE_URL}/vision`, options, 20000),
+      () => fetchWithErrorHandling(`${API_BASE_URL}/vision`, options, 45000),
       'Vision API'
     );
 
@@ -110,7 +110,7 @@ export const analyzeImagesWithGemini = async (base64Images) => {
  * @returns {Promise<Object>} Listing per Vinted/eBay/Subito
  * @throws {Error} Validation/Network/API errors
  */
-export const generateListingsWithGemini = async (visionData) => {
+export const generateListingsWithGemini = async (visionData, language = "Italian") => {
   // 1. Validazione input
   const validation = validateVisionData(visionData);
   if (!validation.valid) {
@@ -120,16 +120,19 @@ export const generateListingsWithGemini = async (visionData) => {
   }
 
   // 2. Preparazione request
+  // Rimuoviamo l'immagine base64 e campi non necessari
+  const { coverImage, images, ...cleanVisionData } = visionData;
+
   const options = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ visionData }),
+    body: JSON.stringify({ visionData: cleanVisionData, language }),
   };
 
   // 3. Esecuzione con retry (timeout più breve per listing)
   try {
     const result = await withRetry(
-      () => fetchWithErrorHandling(`${API_BASE_URL}/listing`, options, 15000),
+      () => fetchWithErrorHandling(`${API_BASE_URL}/listing`, options, 30000),
       'Listing API'
     );
 

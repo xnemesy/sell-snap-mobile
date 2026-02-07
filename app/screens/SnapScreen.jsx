@@ -27,12 +27,22 @@ const SnapScreen = ({ onNext, isPro, remainingAds, onShowPricing, onCancel, isDu
                 const { batchCompress } = require('../utils/imageOptimizer');
 
                 const uris = result.assets.map(asset => asset.uri);
-                const compressedBase64s = await batchCompress(uris, (progress) => {
+                const compressedResults = await batchCompress(uris, (progress) => {
                     setCompressionProgress(progress);
                 });
 
+                // Filtra solo i risultati che hanno avuto successo
+                const validResults = compressedResults.filter(r => !r.failed);
+                const base64Images = validResults.map(img => img.base64);
+
                 setIsCompressing(false);
-                onNext(compressedBase64s);
+
+                if (base64Images.length === 0) {
+                    Alert.alert("Errore", "Non è stato possibile ottimizzare le immagini selezionate.");
+                    return;
+                }
+
+                onNext(base64Images);
             }
         } catch (error) {
             console.error("Pick/Compress error:", error);

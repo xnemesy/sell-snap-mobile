@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Switch, StatusBar, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Switch, StatusBar, Platform, KeyboardAvoidingView, ScrollView } from 'react-native';
 
 const MarketToggle = ({ name, active, onToggle }) => (
     <TouchableOpacity style={styles.toggleRow} onPress={onToggle} activeOpacity={0.7}>
@@ -16,6 +16,7 @@ const MarketToggle = ({ name, active, onToggle }) => (
 const PriceExportScreen = ({ onNext, onCancel }) => {
     const [price, setPrice] = useState('');
     const [selected, setSelected] = useState({ vinted: true, ebay: true, subito: true });
+    const [language, setLanguage] = useState('Italian');
 
     const toggle = (m) => setSelected(prev => ({ ...prev, [m]: !prev[m] }));
 
@@ -36,9 +37,9 @@ const PriceExportScreen = ({ onNext, onCancel }) => {
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     style={{ flex: 1 }}
                 >
-                    <View style={styles.content}>
+                    <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 100 }}>
                         <Text style={styles.title}>Quanto chiedi?</Text>
-                        <Text style={styles.subtitle}>Il prezzo è sempre deciso da te. L'AI rispetta la tua scelta.</Text>
+                        <Text style={styles.subtitle}>Il prezzo è sempre deciso da te.</Text>
 
                         <View style={styles.priceContainer}>
                             <Text style={styles.currency}>€</Text>
@@ -55,6 +56,28 @@ const PriceExportScreen = ({ onNext, onCancel }) => {
                         </View>
 
                         <View style={styles.section}>
+                            <Text style={styles.sectionHeader}>LINGUA ANNUNCIO</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.langList}>
+                                {[
+                                    { id: 'Italian', label: 'Italiano', flag: '🇮🇹' },
+                                    { id: 'English', label: 'English', flag: '🇬🇧' },
+                                    { id: 'French', label: 'Français', flag: '🇫🇷' },
+                                    { id: 'German', label: 'Deutsch', flag: '🇩🇪' },
+                                    { id: 'Spanish', label: 'Español', flag: '🇪🇸' },
+                                ].map((lang) => (
+                                    <TouchableOpacity
+                                        key={lang.id}
+                                        style={[styles.langChip, language === lang.id && styles.langChipActive]}
+                                        onPress={() => setLanguage(lang.id)}
+                                    >
+                                        <Text style={styles.langFlag}>{lang.flag}</Text>
+                                        <Text style={[styles.langText, language === lang.id && styles.langTextActive]}>{lang.label}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+
+                        <View style={styles.section}>
                             <Text style={styles.sectionHeader}>CANALI DI VENDITA</Text>
                             <View style={styles.groupCard}>
                                 <MarketToggle name="Vinted" active={selected.vinted} onToggle={() => toggle('vinted')} />
@@ -64,13 +87,13 @@ const PriceExportScreen = ({ onNext, onCancel }) => {
                                 <MarketToggle name="Subito.it" active={selected.subito} onToggle={() => toggle('subito')} />
                             </View>
                         </View>
-                    </View>
+                    </ScrollView>
                 </KeyboardAvoidingView>
 
                 <View style={styles.footer}>
                     <TouchableOpacity
                         style={[styles.nextBtn, !price && styles.nextBtnDisabled]}
-                        onPress={onNext}
+                        onPress={() => onNext({ price, language })}
                         disabled={!price}
                         activeOpacity={0.8}
                     >
@@ -205,6 +228,36 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: '800',
+    },
+    langList: {
+        gap: 12,
+        paddingLeft: 4,
+    },
+    langChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1e2229',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#2d333d',
+    },
+    langChipActive: {
+        backgroundColor: 'rgba(139, 92, 246, 0.15)',
+        borderColor: '#8b5cf6',
+    },
+    langFlag: {
+        fontSize: 18,
+        marginRight: 8,
+    },
+    langText: {
+        color: '#94a3b8',
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    langTextActive: {
+        color: '#fff',
     },
 });
 

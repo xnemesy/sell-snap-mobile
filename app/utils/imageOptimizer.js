@@ -10,7 +10,7 @@
  */
 
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 const MAX_WIDTH = 1024;
 const MAX_HEIGHT = 1024;
@@ -22,6 +22,10 @@ const MAX_FILE_SIZE_MB = 5;
  */
 const getFileSize = async (uri) => {
   try {
+    if (uri.startsWith('data:')) {
+      const base64Length = uri.split(',')[1]?.length || 0;
+      return (base64Length * 0.75) / (1024 * 1024); // Stima MB
+    }
     const info = await FileSystem.getInfoAsync(uri);
     return info.size / (1024 * 1024); // MB
   } catch (error) {

@@ -38,6 +38,8 @@ const ListingCard = ({ name, title, description, isEdited, onEdit }) => {
 };
 
 const ListingSwipeScreen = ({ drafts, onNext, onCancel }) => {
+    if (!drafts) return null;
+
     const [activeIndex, setActiveIndex] = useState(0);
     const [editedStatus, setEditedStatus] = useState({ vinted: false, ebay: false, subito: false });
     const marketplaces = Object.keys(drafts);
@@ -91,7 +93,7 @@ const ListingSwipeScreen = ({ drafts, onNext, onCancel }) => {
 
                 <View style={styles.footer}>
                     <TouchableOpacity style={styles.nextBtn} onPress={onNext} activeOpacity={0.8}>
-                        <Text style={styles.nextBtnText}>Scegli Prezzo & Pubblica</Text>
+                        <Text style={styles.nextBtnText}>Salva & Finalizza Bozze</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, StatusBar, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, StatusBar, Platform, Dimensions, Image } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -28,7 +28,15 @@ const InventoryDetailScreen = ({ item, onBack, onDuplicate }) => {
                 <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                     <View style={styles.heroSection}>
                         <View style={styles.imagePlaceholder}>
-                            <Text style={{ fontSize: 50 }}>📦</Text>
+                            {item.coverImage ? (
+                                <Image
+                                    source={{ uri: item.coverImage }}
+                                    style={styles.heroImage}
+                                    resizeMode="cover"
+                                />
+                            ) : (
+                                <Text style={{ fontSize: 50 }}>📦</Text>
+                            )}
                         </View>
                         <Text style={styles.title}>{item.title}</Text>
                         <Text style={styles.skuText}>Modello: {item.sku}</Text>
@@ -103,6 +111,11 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         borderWidth: 1,
         borderColor: '#2d333d',
+    },
+    heroImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 32,
     },
     title: {
         color: '#fff',

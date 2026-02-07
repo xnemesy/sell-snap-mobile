@@ -5,9 +5,9 @@ const VisionProcessing = ({ onComplete }) => {
     const [currentStep, setCurrentStep] = useState(0);
     const steps = [
         "Caricamento immagini...",
-        "Rilevamento prodotto e marca",
-        "Analisi condizioni e usura",
-        "Preparazione bozze oneste"
+        "Identificazione prodotto",
+        "Verifica dettagli e condizioni",
+        "Generazione descrizioni"
     ];
 
     useEffect(() => {

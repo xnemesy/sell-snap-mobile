@@ -74,7 +74,9 @@ export const validateVisionData = (data) => {
 
   // Check condition.level (essenziale per listing)
   if (!data.condition.level) {
-    return { valid: false, reason: 'Condition level not specified' };
+    // Non blocchiamo, mettiamo un default
+    console.warn('[Validator] Condition level missing, defaulting to "Buone"');
+    data.condition.level = "Buone";
   }
 
   // Validazione opzionale: warn se troppi campi missing

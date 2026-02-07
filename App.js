@@ -63,6 +63,11 @@ function AppContent() {
       setUser(u);
       setAuthLoading(false);
 
+      // Abilitazione privilegi Pro per l'account dell'utente
+      if (u?.email === 'xroccosantonastasiox@gmail.com') {
+        setIsPro(true);
+      }
+
       if (u) {
         const q = query(
           collection(db, "inventory"),
@@ -126,7 +131,7 @@ function AppContent() {
     );
   };
 
-  const saveToInventory = async (price) => {
+  const saveToInventory = async (price, coverImage) => {
     if (!data || !user) return;
     try {
       await addDoc(collection(db, "inventory"), {
@@ -135,6 +140,8 @@ function AppContent() {
         sku: data.product.sku || "N/A",
         price: price || "0",
         date: new Date().toLocaleDateString('it-IT'),
+        coverImage: coverImage || null,
+        language: data.language_used || "Italian",
         raw_data: data,
         createdAt: serverTimestamp()
       });
@@ -178,12 +185,13 @@ function AppContent() {
 
       try {
         let visionResult;
+        let base64Images = [];
 
         if (val) {
           // Comprimi immagini prima di inviare
           const imageUris = Array.isArray(val) ? val : [val];
           const compressed = await batchCompress(imageUris);
-          const base64Images = compressed.map(img => img.base64);
+          base64Images = compressed.map(img => img.base64);
 
           visionResult = await analyzeImagesWithGemini(base64Images);
 
@@ -196,6 +204,7 @@ function AppContent() {
             : mockVisionData;
         }
 
+        visionResult.coverImage = base64Images[0];
         setData(visionResult);
         setDuplicateBase(null);
         setTimeout(() => changeStatus('VISION'), 800);
@@ -209,24 +218,31 @@ function AppContent() {
     }
     else if (status === 'VISION') changeStatus('READINESS');
     else if (status === 'READINESS') {
+      changeStatus('PRICE');
+    }
+    else if (status === 'LISTING') {
+      await saveToInventory(data.final_price, data.coverImage);
+      changeStatus('PUBLISHING');
+    }
+    else if (status === 'PRICE') {
+      const { price, language } = val;
       changeStatus('GENERATING_LISTINGS');
 
       try {
-        const listingResult = await generateListingsWithGemini(data);
+        const listingResult = await generateListingsWithGemini(data, language);
         setDrafts(listingResult);
+
+        // Salviamo i parametri scelti dall'utente
+        setData(prev => ({ ...prev, language_used: language, final_price: price }));
+
         changeStatus('LISTING');
       } catch (err) {
         handleGeminiError(
           err,
-          () => handleNext(), // Retry
-          () => changeStatus('READINESS') // Cancel
+          () => handleNext(val), // Riprova con gli stessi dati
+          () => changeStatus('PRICE')
         );
       }
-    }
-    else if (status === 'LISTING') changeStatus('PRICE');
-    else if (status === 'PRICE') {
-      saveToInventory(val);
-      changeStatus('PUBLISHING');
     }
     else if (status === 'PUBLISHING') {
       setDailyAdsCount(prev => prev + 1);

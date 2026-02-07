@@ -2,7 +2,15 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth } from '../services/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+let GoogleSignin = null;
+let statusCodes = {};
+try {
+    const GoogleModule = require('@react-native-google-signin/google-signin');
+    GoogleSignin = GoogleModule.GoogleSignin;
+    statusCodes = GoogleModule.statusCodes;
+} catch (e) {
+    // Il modulo fallirà il caricamento nativo in Expo Go, lo gestiamo silenziosamente
+}
 import React, { useState, useEffect } from 'react';
 
 const { width } = Dimensions.get('window');
@@ -14,13 +22,24 @@ const AuthScreen = () => {
     const [isRegister, setIsRegister] = useState(false);
 
     useEffect(() => {
-        GoogleSignin.configure({
-            webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
-            offlineAccess: true,
-        });
+        // Controllo di sicurezza per Expo Go
+        try {
+            if (GoogleSignin?.configure) {
+                GoogleSignin.configure({
+                    webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+                    offlineAccess: true,
+                });
+            }
+        } catch (e) {
+            console.warn("Google Sign-In non disponibile in questo ambiente (Expo Go?)");
+        }
     }, []);
 
     const handleGoogleSignIn = async () => {
+        if (!GoogleSignin?.hasPlayServices) {
+            Alert.alert("Ambiente non supportato", "Il login con Google richiede un Development Build e non funziona in Expo Go.");
+            return;
+        }
         try {
             setLoading(true);
             await GoogleSignin.hasPlayServices();

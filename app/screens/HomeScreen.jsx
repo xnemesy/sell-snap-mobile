@@ -1,12 +1,20 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, Platform, Dimensions, TextInput } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, Platform, Dimensions, TextInput, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
-
 const InventoryItem = ({ item, onSelect }) => (
     <TouchableOpacity style={styles.inventoryCard} onPress={() => onSelect(item)} activeOpacity={0.7}>
         <View style={styles.inventoryIconBox}>
-            <Text style={{ fontSize: 18, color: '#64748b' }}>#</Text>
+            {item.coverImage ? (
+                <Image
+                    source={{ uri: item.coverImage }}
+                    style={styles.inventoryImage}
+                    resizeMode="cover"
+                />
+            ) : (
+                <Text style={{ fontSize: 18, color: '#64748b' }}>#</Text>
+            )}
         </View>
         <View style={styles.inventoryInfo}>
             <Text style={styles.inventoryTitle} numberOfLines={1}>{item.title}</Text>
@@ -365,6 +373,11 @@ const styles = StyleSheet.create({
         color: '#a78bfa',
         fontSize: 10,
         fontWeight: '800',
+    },
+    inventoryImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 12,
     },
     tipCard: {
         backgroundColor: 'rgba(139, 92, 246, 0.05)',
