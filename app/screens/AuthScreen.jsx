@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Dimensions, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Dimensions, StatusBar, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth } from '../services/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import React, { useState, useEffect } from 'react';
 
 const { width } = Dimensions.get('window');
 
@@ -10,6 +12,36 @@ const AuthScreen = () => {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [isRegister, setIsRegister] = useState(false);
+
+    useEffect(() => {
+        GoogleSignin.configure({
+            webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+            offlineAccess: true,
+        });
+    }, []);
+
+    const handleGoogleSignIn = async () => {
+        try {
+            setLoading(true);
+            await GoogleSignin.hasPlayServices();
+            const { idToken } = await GoogleSignin.signIn();
+            const credential = GoogleAuthProvider.credential(idToken);
+            await signInWithCredential(auth, credential);
+        } catch (error) {
+            console.log("Google Login Error:", error);
+            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                // Utente ha annullato
+            } else if (error.code === statusCodes.IN_PROGRESS) {
+                // Già in corso
+            } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+                Alert.alert("Errore", "Play Services non disponibili.");
+            } else {
+                Alert.alert("Errore Google", error.message);
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleAuth = async () => {
         if (!email || !password) return;
@@ -91,7 +123,11 @@ const AuthScreen = () => {
                             <View style={styles.divider} />
                         </View>
 
-                        <TouchableOpacity style={styles.googleBtn} activeOpacity={0.8}>
+                        <TouchableOpacity
+                            style={styles.googleBtn}
+                            activeOpacity={0.8}
+                            onPress={handleGoogleSignIn}
+                        >
                             <Text style={styles.googleEmoji}>G</Text>
                             <Text style={styles.googleBtnText}>Continua con Google</Text>
                         </TouchableOpacity>

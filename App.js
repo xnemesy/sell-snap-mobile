@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, StatusBar, Alert, Animated, Dimensions, ActivityIndicator, LogBox } from 'react-native';
+import { StyleSheet, View, StatusBar, Animated, Dimensions, ActivityIndicator, LogBox } from 'react-native';
 
 // Fix billing simulator error
 LogBox.ignoreLogs(['[RN-IAP]', 'Billing init error']);
+
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from './app/services/firebase';
 import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
 
+// Screens
 import HomeScreen from './app/screens/HomeScreen';
 import AccountScreen from './app/screens/AccountScreen';
 import SnapScreen from './app/screens/SnapScreen';
@@ -21,12 +23,20 @@ import InventoryDetailScreen from './app/screens/InventoryDetailScreen';
 import AuthScreen from './app/screens/AuthScreen';
 import PublishingOverlay from './app/components/PublishingOverlay';
 
-import { analyzeImagesWithGemini, generateListingsWithGemini } from './app/services/geminiService';
+// New Components
+import { ErrorBoundary } from './app/components/ErrorBoundary';
+import { FlowProgressBar, FLOW_STEPS, EXCLUDED_FROM_PROGRESS } from './app/components/FlowProgressBar';
+import { useErrorModal } from './app/components/ErrorModal';
+
+// Services
+import { analyzeImagesWithGemini, generateListingsWithGemini, handleGeminiError } from './app/services/geminiService';
 import { initBilling } from './app/services/billing';
+import { CacheManager } from './app/services/CacheManager';
+import { batchCompress } from './app/utils/imageOptimizer';
 
 const { width } = Dimensions.get('window');
 
-export default function App() {
+function AppContent() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [status, setStatus] = useState('HOME');
@@ -41,10 +51,15 @@ export default function App() {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
 
+  const { showError, ErrorModalComponent } = useErrorModal();
+
   useEffect(() => {
     let unsubscribeInventory = () => { };
+    let mounted = true;
 
     const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
+      if (!mounted) return;
+
       setUser(u);
       setAuthLoading(false);
 
@@ -69,7 +84,9 @@ export default function App() {
     });
 
     initBilling();
+
     return () => {
+      mounted = false;
       unsubscribeAuth();
       unsubscribeInventory();
     };
@@ -90,18 +107,23 @@ export default function App() {
   };
 
   const resetFlow = () => {
-    Alert.alert("Annulla", "Tornare alla Home? I progressi andranno persi.", [
-      { text: "No", style: "cancel" },
+    showError(
+      "Annullare operazione?",
+      "Tornare alla Home? I progressi andranno persi.",
+      () => {
+        setData(null);
+        setDrafts(null);
+        setDuplicateBase(null);
+        setSelectedItem(null);
+        changeStatus('HOME');
+      },
+      "Sì, annulla",
       {
-        text: "Sì", onPress: () => {
-          setData(null);
-          setDrafts(null);
-          setDuplicateBase(null);
-          setSelectedItem(null);
-          changeStatus('HOME');
-        }
+        secondaryAction: "No, continua",
+        onSecondaryAction: () => { },
+        type: 'warning',
       }
-    ]);
+    );
   };
 
   const saveToInventory = async (price) => {
@@ -118,57 +140,88 @@ export default function App() {
       });
     } catch (err) {
       console.error("Firestore Error:", err);
-      Alert.alert("Errore", "Impossibile salvare nell'archivio cloud.");
+      showError(
+        "Errore salvataggio",
+        "Impossibile salvare nell'archivio cloud. Riprova più tardi.",
+        null,
+        "OK",
+        { type: 'error' }
+      );
     }
   };
 
   const handleDuplicateRequest = (item) => {
-    Alert.alert(
+    showError(
       "Creare un annuncio simile?",
       "Categoria e struttura verranno riutilizzate. Foto, condizioni e difetti saranno rivalutati.",
-      [
-        { text: "Annulla", style: "cancel" },
-        {
-          text: "Continua",
-          onPress: () => {
-            setDuplicateBase(item.raw_data);
-            changeStatus('SNAP');
-          }
-        }
-      ]
+      () => {
+        setDuplicateBase(item.raw_data);
+        changeStatus('SNAP');
+      },
+      "Continua",
+      {
+        secondaryAction: "Annulla",
+        onSecondaryAction: () => { },
+        type: 'info',
+      }
     );
   };
 
   const handleNext = async (val) => {
     if (status === 'SNAP') {
-      if (!isPro && dailyAdsCount >= 3) { changeStatus('PRICING'); return; }
+      if (!isPro && dailyAdsCount >= 3) {
+        changeStatus('PRICING');
+        return;
+      }
+
       changeStatus('PROCESSING');
+
       try {
         let visionResult;
+
         if (val) {
-          visionResult = await analyzeImagesWithGemini(val);
+          // Comprimi immagini prima di inviare
+          const imageUris = Array.isArray(val) ? val : [val];
+          const compressed = await batchCompress(imageUris);
+          const base64Images = compressed.map(img => img.base64);
+
+          visionResult = await analyzeImagesWithGemini(base64Images);
+
           if (duplicateBase) {
             visionResult.product = { ...duplicateBase.product, ...visionResult.product };
           }
         } else {
-          visionResult = duplicateBase ? { ...duplicateBase, condition: { level: "Da confermare" } } : mockVisionData;
+          visionResult = duplicateBase
+            ? { ...duplicateBase, condition: { level: "Da confermare" } }
+            : mockVisionData;
         }
+
         setData(visionResult);
         setDuplicateBase(null);
         setTimeout(() => changeStatus('VISION'), 800);
       } catch (err) {
-        Alert.alert("Errore", "Riprova più tardi.");
-        changeStatus('SNAP');
+        handleGeminiError(
+          err,
+          () => handleNext(val), // Retry
+          () => changeStatus('SNAP') // Cancel
+        );
       }
     }
     else if (status === 'VISION') changeStatus('READINESS');
     else if (status === 'READINESS') {
       changeStatus('GENERATING_LISTINGS');
+
       try {
         const listingResult = await generateListingsWithGemini(data);
         setDrafts(listingResult);
         changeStatus('LISTING');
-      } catch (err) { changeStatus('READINESS'); }
+      } catch (err) {
+        handleGeminiError(
+          err,
+          () => handleNext(), // Retry
+          () => changeStatus('READINESS') // Cancel
+        );
+      }
     }
     else if (status === 'LISTING') changeStatus('PRICE');
     else if (status === 'PRICE') {
@@ -230,12 +283,21 @@ export default function App() {
           isDuplicating={!!duplicateBase}
         />;
       case 'PRICING':
-        return <PricingScreen onPlanSelect={(p) => { if (p !== 'free') setIsPro(true); changeStatus('HOME'); }} onBack={() => changeStatus('HOME')} limitReached={!isPro && dailyAdsCount >= 3} />;
+        return <PricingScreen
+          onPlanSelect={(p) => { if (p !== 'free') setIsPro(true); changeStatus('HOME'); }}
+          onBack={() => changeStatus('HOME')}
+          limitReached={!isPro && dailyAdsCount >= 3}
+        />;
       case 'PROCESSING':
       case 'GENERATING_LISTINGS':
         return <VisionProcessing onComplete={() => { }} />;
       case 'VISION':
-        return <VisionConfirmScreen data={data} onUpdate={setData} onConfirm={() => handleNext()} onCancel={resetFlow} />;
+        return <VisionConfirmScreen
+          data={data}
+          onUpdate={setData}
+          onConfirm={() => handleNext()}
+          onCancel={resetFlow}
+        />;
       case 'READINESS':
         return <ImageReadinessScreen onNext={() => handleNext()} onCancel={resetFlow} />;
       case 'LISTING':
@@ -256,14 +318,41 @@ export default function App() {
     );
   }
 
+  // Mostra progress bar solo per stati flow utente
+  const showProgressBar = !EXCLUDED_FROM_PROGRESS.includes(status) && FLOW_STEPS[status];
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#121418" />
+
+      {/* Progress Bar */}
+      {showProgressBar && (
+        <FlowProgressBar
+          currentStep={FLOW_STEPS[status].index}
+          totalSteps={FLOW_STEPS[status].total}
+          stepLabel={FLOW_STEPS[status].label}
+        />
+      )}
+
+      {/* Main Content */}
       <Animated.View style={[styles.animatedContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
         {renderScreen()}
       </Animated.View>
+
+      {/* Overlays */}
       <PublishingOverlay visible={status === 'PUBLISHING'} onComplete={() => handleNext()} />
+
+      {/* Error Modal */}
+      {ErrorModalComponent}
     </View>
+  );
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary onReset={() => console.log('App reset')}>
+      <AppContent />
+    </ErrorBoundary>
   );
 }
 

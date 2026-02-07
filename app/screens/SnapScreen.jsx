@@ -1,22 +1,43 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, StatusBar, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Dimensions, StatusBar, Platform, ActivityIndicator, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 const { width } = Dimensions.get('window');
 
 const SnapScreen = ({ onNext, isPro, remainingAds, onShowPricing, onCancel, isDuplicating }) => {
-    const pickImage = async () => {
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'],
-            allowsMultipleSelection: true,
-            selectionLimit: 5,
-            quality: 0.8,
-            base64: true,
-        });
+    const [isCompressing, setIsCompressing] = React.useState(false);
+    const [compressionProgress, setCompressionProgress] = React.useState(0);
+    const [statusMessage, setStatusMessage] = React.useState("");
 
-        if (!result.canceled && result.assets && result.assets.length > 0) {
-            const base64Array = result.assets.map(asset => asset.base64);
-            onNext(base64Array);
+    const pickImage = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'],
+                allowsMultipleSelection: true,
+                selectionLimit: 5,
+                quality: 0.8, // Initial quality from picker
+                base64: false, // optimizing AFTER picking, so we need URI first
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                setIsCompressing(true);
+                setStatusMessage("Ottimizzazione immagini...");
+
+                // Dynamically import to avoid top-level failures if dependencies aren't ready
+                const { batchCompress } = require('../utils/imageOptimizer');
+
+                const uris = result.assets.map(asset => asset.uri);
+                const compressedBase64s = await batchCompress(uris, (progress) => {
+                    setCompressionProgress(progress);
+                });
+
+                setIsCompressing(false);
+                onNext(compressedBase64s);
+            }
+        } catch (error) {
+            console.error("Pick/Compress error:", error);
+            setIsCompressing(false);
+            alert("Errore caricamento immagini. Riprova.");
         }
     };
 
@@ -84,6 +105,13 @@ const SnapScreen = ({ onNext, isPro, remainingAds, onShowPricing, onCancel, isDu
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>Review it. Sell it. Snap it.</Text>
                 </View>
+
+                {isCompressing && (
+                    <View style={styles.compressionOverlay}>
+                        <ActivityIndicator size="large" color="#8b5cf6" />
+                        <Text style={styles.compressionText}>{statusMessage} {compressionProgress}%</Text>
+                    </View>
+                )}
             </SafeAreaView>
         </View>
     );
@@ -121,6 +149,19 @@ const styles = StyleSheet.create({
     proBadge: {
         backgroundColor: 'rgba(139, 92, 246, 0.2)',
         borderColor: 'rgba(139, 92, 246, 0.3)',
+    },
+    compressionOverlay: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        zIndex: 99,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    compressionText: {
+        color: '#fff',
+        marginTop: 10,
+        fontWeight: 'bold'
     },
     statusBadgeText: {
         color: '#fff',
